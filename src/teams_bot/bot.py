@@ -51,11 +51,7 @@ class RelayPlugin:
             else:
                 logging.debug("Ignoring message, just admins chatting")
 
-        elif message.chat.get_contacts() == self.account.get_chat_by_id(
-            get_crew_id(self.account)
-        ).get_contacts() and message.chat.get_name().startswith(
-            "[%s] " % (self.account.get_config("addr").split("@")[0],)
-        ):
+        elif self.is_relay_group(message.chat):
             if message.quote.get_sender_contact() == self.account.get_self_contact():
                 """:TODO forward to original sender"""
             else:
@@ -64,6 +60,19 @@ class RelayPlugin:
         else:
             logging.debug("Forwarding message to relay group")
             """:TODO forward message to relay group"""
+
+    def is_relay_group(self, chat: deltachat.Chat) -> bool:
+        """Check whether a chat is a relay group."""
+        if not chat.get_name().startswith("[%s] " % (self.account.get_config("addr").split("@")[0],)):
+            return False  # all relay groups' names begin with a [tag] with the localpart of the teamsbot's address
+        if chat.get_messages()[0].get_sender_contact() != self.account.get_self_contact():
+            return False  # all relay groups were started by the teamsbot
+        if chat.is_protected():
+            return False  # relay groups don't need to be protected, so they are not
+        for crew_member in self.account.get_chat_by_id(get_crew_id(self.account)).get_contacts():
+            if crew_member not in chat.get_contacts():
+                return False  # all crew members have to be in any relay group
+        return True
 
 
 def get_crew_id(ac: deltachat.Account, setupplugin: SetupPlugin = None) -> int:

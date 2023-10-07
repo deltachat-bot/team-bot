@@ -25,6 +25,47 @@ class SetupPlugin:
                 self.message_sent.set()
 
 
+class RelayPlugin:
+    def __init__(self, account: deltachat.Account):
+        self.account = account
+
+    @account_hookimpl
+    def ac_incoming_message(self, message: deltachat.Message):
+        """This method is called on every incoming message and decides what to do with it."""
+        logging.info(
+            "New message from %s in chat %s: %s",
+            message.get_sender_contact().addr,
+            message.chat.get_name(),
+            message.text,
+        )
+
+        if message.is_system_message():
+            logging.debug("This is a system message")
+            """:TODO handle chat name changes"""
+            return
+
+        if message.chat.id == get_crew_id(self.account):
+            if message.text.startswith("/"):
+                logging.debug("handling command by %s: %s", message.get_sender_contact().addr, message.text)
+                """:TODO handle command"""
+            else:
+                logging.debug("Ignoring message, just admins chatting")
+
+        elif message.chat.get_contacts() == self.account.get_chat_by_id(
+            get_crew_id(self.account)
+        ).get_contacts() and message.chat.get_name().startswith(
+            "[%s] " % (self.account.get_config("addr").split("@")[0],)
+        ):
+            if message.quote.get_sender_contact() == self.account.get_self_contact():
+                """:TODO forward to original sender"""
+            else:
+                logging.debug("Ignoring message, just admins chatting")
+
+        else:
+            logging.debug("Forwarding message to relay group")
+            """:TODO forward message to relay group"""
+
+
 def get_crew_id(ac: deltachat.Account, setupplugin: SetupPlugin = None) -> int:
     """Get the group ID of the crew group if it exists; warn old crews if they might still believe they are the crew.
 

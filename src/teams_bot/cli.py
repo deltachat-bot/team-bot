@@ -5,7 +5,7 @@ import click
 import qrcode
 import deltachat
 
-from .bot import SetupPlugin, get_crew_id
+from .bot import SetupPlugin, RelayPlugin, get_crew_id
 
 
 def set_log_level(verbose: int, db: str):
@@ -112,6 +112,16 @@ def init(ctx, email: str, password: str, db: str, verbose: int):
 @click.pass_context
 def run(ctx, db: str, verbose: int):
     set_log_level(verbose, db)
+
+    ac = deltachat.Account(db)
+    ac.run_account(account_plugins=[RelayPlugin(ac)], show_ffi=verbose)
+    try:
+        ac.wait_shutdown()
+    except KeyboardInterrupt:
+        logging.info("Received KeyboardInterrupt")
+        print("Shutting down...")
+        ac.shutdown()
+        ac.wait_shutdown()
 
 
 def main():

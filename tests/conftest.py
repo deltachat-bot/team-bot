@@ -1,4 +1,5 @@
 import os
+import requests
 
 import deltachat
 import pytest
@@ -72,6 +73,60 @@ def tmp_file_path(request, tmpdir):
         with open(path, "w+", encoding="utf-8") as f:
             f.write("test")
         return path
+
+
+@pytest.fixture
+def crew(teams_bot, teams_user):
+    from teams_bot.bot import SetupPlugin
+
+    crew = teams_bot.create_group_chat(
+        f"Team: {teams_bot.get_config('addr')}", verified=True
+    )
+    setupplugin = SetupPlugin(crew.id)
+    teams_bot.add_account_plugin(setupplugin)
+    qr = crew.get_join_qr()
+    teams_user.qr_join_chat(qr)
+    setupplugin.member_added.wait(timeout=30)
+    crew.user = teams_user
+    crew.bot = teams_bot
+    crew.bot.setupplugin = setupplugin
+    yield crew
+
+
+@pytest.fixture
+def teams_bot(tmpdir):
+    ac = account(tmpdir + "/bot.sqlite", show_ffi=True)
+    yield ac
+    ac.shutdown()
+    ac.wait_shutdown()
+
+
+@pytest.fixture
+def teams_user(tmpdir):
+    ac = account(tmpdir + "/user.sqlite")
+    yield ac
+    ac.shutdown()
+    ac.wait_shutdown()
+
+
+@pytest.fixture
+def outsider(tmpdir):
+    ac = account(tmpdir + "/outsider.sqlite")
+    yield ac
+    ac.shutdown()
+    ac.wait_shutdown()
+
+
+def account(db_path, show_ffi=False):
+    token = os.environ.get("DCC_NEW_TMP_EMAIL")
+    print(token)
+    ac = deltachat.Account(str(db_path))
+    credentials = requests.post(token).json()
+    email = credentials["email"]
+    password = credentials["password"]
+    print(db_path, email, password)
+    ac.run_account(email, password, show_ffi=show_ffi)
+    return ac
 
 
 @pytest.fixture

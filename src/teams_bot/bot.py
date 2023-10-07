@@ -6,15 +6,15 @@ from deltachat import account_hookimpl
 
 
 class SetupPlugin:
-    def __init__(self, admingrpid):
+    def __init__(self, crew_id):
         self.member_added = Event()
-        self.admingrpid = admingrpid
+        self.crew_id = crew_id
         self.message_sent = Event()
         self.outgoing_messages = 0
 
     @account_hookimpl
     def ac_member_added(self, chat: deltachat.Chat, contact, actor, message):
-        if chat.id == self.admingrpid and chat.num_contacts() == 2:
+        if chat.id == self.crew_id and chat.num_contacts() == 2:
             self.member_added.set()
 
     @account_hookimpl

@@ -46,30 +46,76 @@ class RelayPlugin:
 
         if message.chat.id == get_crew_id(self.account):
             if message.text.startswith("/"):
-                logging.debug("handling command by %s: %s", message.get_sender_contact().addr, message.text)
+                logging.debug(
+                    "handling command by %s: %s",
+                    message.get_sender_contact().addr,
+                    message.text,
+                )
                 """:TODO handle command"""
             else:
                 logging.debug("Ignoring message, just admins chatting")
 
         elif self.is_relay_group(message.chat):
-            if message.quote.get_sender_contact() == self.account.get_self_contact():
-                """:TODO forward to original sender"""
+            if hasattr(message, "quote"):
+                if (
+                    message.quote.get_sender_contact()
+                    == self.account.get_self_contact()
+                ):
+                    logging.debug("Forwarding message to outsider")
+                    """:TODO forward to outsider"""
+                else:
+                    logging.debug("Ignoring message, just admins chatting")
             else:
                 logging.debug("Ignoring message, just admins chatting")
 
         else:
             logging.debug("Forwarding message to relay group")
-            """:TODO forward message to relay group"""
+            self.forward_to_relay_group(message)
+
+    def forward_to_relay_group(self, message: deltachat.Message):
+        """forward a request to a relay group; create one if it doesn't exist yet."""
+        outsider = message.get_sender_contact().addr
+        crew_members = self.account.get_chat_by_id(
+            get_crew_id(self.account)
+        ).get_contacts()
+        crew_members.remove(self.account.get_self_contact())
+        group_name = "[%s] %s" % (
+            self.account.get_config("addr").split("@")[0],
+            message.chat.get_name(),
+        )
+        for chat in self.account.get_chats():
+            if chat.get_name() == group_name:
+                relay_group = chat
+                break
+        else:
+            logging.info("creating new relay group: '%s'", group_name)
+            relay_group = self.account.create_group_chat(
+                group_name, crew_members, verified=False
+            )
+            # relay_group.set_profile_image("assets/avatar.jpg")
+            relay_group.send_text(
+                "This is the relay group for %s; I'll only forward 'direct replies' to the outside."
+                % (message.chat.get_name())
+            )
+        message.set_override_sender_name(outsider)
+        relay_group.send_msg(message)
 
     def is_relay_group(self, chat: deltachat.Chat) -> bool:
         """Check whether a chat is a relay group."""
-        if not chat.get_name().startswith("[%s] " % (self.account.get_config("addr").split("@")[0],)):
+        if not chat.get_name().startswith(
+            "[%s] " % (self.account.get_config("addr").split("@")[0],)
+        ):
             return False  # all relay groups' names begin with a [tag] with the localpart of the teamsbot's address
-        if chat.get_messages()[0].get_sender_contact() != self.account.get_self_contact():
+        if (
+            chat.get_messages()[0].get_sender_contact()
+            != self.account.get_self_contact()
+        ):
             return False  # all relay groups were started by the teamsbot
         if chat.is_protected():
             return False  # relay groups don't need to be protected, so they are not
-        for crew_member in self.account.get_chat_by_id(get_crew_id(self.account)).get_contacts():
+        for crew_member in self.account.get_chat_by_id(
+            get_crew_id(self.account)
+        ).get_contacts():
             if crew_member not in chat.get_contacts():
                 return False  # all crew members have to be in any relay group
         return True

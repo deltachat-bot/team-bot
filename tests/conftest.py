@@ -90,6 +90,15 @@ def crew(teams_bot, teams_user):
     crew.user = teams_user
     crew.bot = teams_bot
     crew.bot.setupplugin = setupplugin
+
+    # wait until old user is properly added to crew
+    last_message = teams_user.wait_next_incoming_message().text
+    while (
+        f"Member Me ({teams_user.get_config('addr')}) added by bot" not in last_message
+    ):
+        print("User received message:", last_message)
+        last_message = teams_user.wait_next_incoming_message().text
+
     yield crew
 
 

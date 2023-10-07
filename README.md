@@ -22,3 +22,15 @@ hiding the identities of the team members.
 
 ## Usage: Command Line Interface
 
+## Development Environment
+
+To get started with developing,
+run:
+
+```
+python3 -m venv venv
+. venv/bin/activate
+pip install pytest tox black
+pip install -e .
+tox
+```

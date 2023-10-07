@@ -1,5 +1,11 @@
-import click
 import logging
+import sys
+
+import click
+import qrcode
+import deltachat
+
+from .bot import SetupPlugin, get_crew_id
 
 
 def set_log_level(verbose: int, db: str):
@@ -40,6 +46,60 @@ def teams_bot(ctx):
 def init(ctx, email: str, password: str, db: str, verbose: int):
     """Configure bot; create crew; add user to crew by scanning a QR code."""
     set_log_level(verbose, db)
+
+    ac = deltachat.Account(db)
+    ac.run_account(addr=email, password=password, show_ffi=verbose)
+    ac.set_config("mvbox_move", "1")
+    ac.set_config("sentbox_watch", "0")
+
+    crew_id_old = get_crew_id(ac)
+
+    chat = ac.create_group_chat(
+        "Team: {}".format(ac.get_config("addr")), contacts=[], verified=True
+    )
+
+    setupplugin = SetupPlugin(chat.id)
+    ac.add_account_plugin(setupplugin)
+
+    chatinvite = chat.get_join_qr()
+    qr = qrcode.QRCode()
+    qr.add_data(chatinvite)
+    print(
+        "\nPlease scan this qr code with Delta Chat to join the verified crew group:\n\n"
+    )
+    qr.print_ascii(invert=True)
+    print(
+        "\nAlternatively, copy-paste this invite to your Delta Chat desktop client:",
+        chatinvite,
+    )
+
+    print("\nWaiting until you join the chat")
+    sys.stdout.flush()  # flush stdout to actually show the messages above
+    setupplugin.member_added.wait()
+    setupplugin.message_sent.clear()
+
+    chat.send_text(
+        "Welcome to the %s crew! Type /help to see the existing commands."
+        % (ac.get_config("addr"),)
+    )
+    print("Welcome message sent.")
+    setupplugin.message_sent.wait()
+
+    if crew_id_old:
+        setupplugin.message_sent.clear()
+        try:
+            new_crew_id = get_crew_id(
+                ac, setupplugin
+            )  # notify old crew about who created the new crew
+            assert (
+                new_crew_id == chat.id
+            ), f"Bot found different 'new crew' than the one we just created; consider deleting {db}"
+            setupplugin.message_sent.wait()
+        except ValueError as e:
+            logging.warning("Could not notify the old crew: %s", str(e))
+        print("The old crew was deactivated.")
+    sys.stdout.flush()  # flush stdout to actually show the messages above
+    ac.shutdown()
 
 
 @teams_bot.command()

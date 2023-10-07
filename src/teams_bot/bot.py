@@ -56,13 +56,13 @@ class RelayPlugin:
                 logging.debug("Ignoring message, just admins chatting")
 
         elif self.is_relay_group(message.chat):
-            if hasattr(message, "quote"):
+            if message.quote:
                 if (
                     message.quote.get_sender_contact()
                     == self.account.get_self_contact()
                 ):
                     logging.debug("Forwarding message to outsider")
-                    """:TODO forward to outsider"""
+                    self.forward_to_outside(message)
                 else:
                     logging.debug("Ignoring message, just admins chatting")
             else:
@@ -71,6 +71,24 @@ class RelayPlugin:
         else:
             logging.debug("Forwarding message to relay group")
             self.forward_to_relay_group(message)
+
+    def forward_to_outside(self, message: deltachat.Message):
+        """forward an answer to an outsider."""
+        bot_localpart = self.account.get_config('addr').split('@')[0]
+        title_prefix = f"[{bot_localpart}] "
+        chat_title = message.chat.get_name().split(title_prefix)[1]
+        logging.debug("stripped %s to %s", message.chat.get_name(), chat_title)
+        for chat in self.account.get_chats():
+            if chat_title == chat.get_name():
+                if message.quote.text in [msg.text for msg in chat.get_messages()]:
+                    outside_chat = chat
+                    break
+                else:
+                    logging.debug("No corresponding message in chat %s with name: %s", chat.id, chat.get_name())
+        else:
+            logging.error("Couldn't find the chat with the title: %s", chat_title)
+            return
+        outside_chat.send_msg(message)
 
     def forward_to_relay_group(self, message: deltachat.Message):
         """forward a request to a relay group; create one if it doesn't exist yet."""

@@ -111,6 +111,7 @@ def init(ctx, email: str, password: str, db: str, verbose: int):
 )
 @click.pass_context
 def run(ctx, db: str, verbose: int):
+    """Run the bot, so it relays messages between the crew and the outside."""
     set_log_level(verbose, db)
 
     ac = deltachat.Account(db)

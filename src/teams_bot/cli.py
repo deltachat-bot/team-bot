@@ -114,7 +114,9 @@ def run(ctx, db: str, verbose: int):
     set_log_level(verbose, db)
 
     ac = deltachat.Account(db)
+    display_name = ac.get_config("displayname")
     ac.run_account(account_plugins=[RelayPlugin(ac)], show_ffi=verbose)
+    ac.set_config("displayname", display_name)
     try:
         ac.wait_shutdown()
     except KeyboardInterrupt:

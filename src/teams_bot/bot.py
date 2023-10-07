@@ -3,6 +3,9 @@ from threading import Event
 
 import deltachat
 from deltachat import account_hookimpl
+from deltachat.capi import lib as dclib
+
+from .commands import set_display_name, help_message
 
 
 class SetupPlugin:
@@ -51,9 +54,13 @@ class RelayPlugin:
                     message.get_sender_contact().addr,
                     message.text,
                 )
-                """:TODO handle command"""
+                arguments = message.text.split(" ")
+                if arguments[0] == "/help":
+                    self.reply(message.chat, help_message(), quote=message)
+                if arguments[0] == "/set_name":
+                    self.reply(message.chat, set_display_name(self.account, arguments[1]), quote=message)
             else:
-                logging.debug("Ignoring message, just admins chatting")
+                logging.debug("Ignoring message, just the crew chatting")
 
         elif self.is_relay_group(message.chat):
             if message.quote:
@@ -64,13 +71,21 @@ class RelayPlugin:
                     logging.debug("Forwarding message to outsider")
                     self.forward_to_outside(message)
                 else:
-                    logging.debug("Ignoring message, just admins chatting")
+                    logging.debug("Ignoring message, just the crew chatting")
             else:
-                logging.debug("Ignoring message, just admins chatting")
+                logging.debug("Ignoring message, just the crew chatting")
 
         else:
             logging.debug("Forwarding message to relay group")
             self.forward_to_relay_group(message)
+
+    def reply(self, chat: deltachat.Chat, text: str, quote: deltachat.Message = None):
+        """Send a reply to a chat, with optional quote."""
+        msg = deltachat.Message.new_empty(self.account, view_type="text")
+        msg.set_text(text)
+        msg.quote = quote
+        sent_id = dclib.dc_send_msg(self.account._dc_context, chat.id, msg._dc_msg)
+        assert sent_id == msg.id
 
     def forward_to_outside(self, message: deltachat.Message):
         """forward an answer to an outsider."""

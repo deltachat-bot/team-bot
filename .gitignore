@@ -1,0 +1,7 @@
+*.swp
+*.egg-info/
+__pycache__/
+/.tox/
+/build/
+/venv/
+bot.db/

@@ -18,9 +18,38 @@ hiding the identities of the team members.
 
 ## Setup
 
-### Configuration
+To install this bot,
+run:
 
-## Usage: Command Line Interface
+```
+git clone https://git.0x90.space/missytake/teams-bot
+cd teams-bot
+pip install .
+```
+
+Now you can configure it
+with an email address
+you want to use as a team:
+
+```
+teams-bot init --email das_synthikat@systemli.org --password p455w0rD
+```
+
+This command will show a QR code;
+scan it with Delta Chat
+to become part of the "team",
+the verified group which manages the Teams Bot.
+
+Now to run it,
+simply execute:
+
+```
+teams-bot init --email das_synthikat@systemli.org --password p455w0rD
+```
+
+The bot only works as long as this command is running.
+Read more about [running bots on
+bots.delta.chat](https://bots.delta.chat/howto.html).
 
 ## Development Environment
 

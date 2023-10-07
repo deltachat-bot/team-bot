@@ -82,3 +82,4 @@ def chat(tmpdir):
     # create chat partner from token
     # initiate a chat between them
     # return the chat object
+    print(token, str(ac.get_config("addr")))

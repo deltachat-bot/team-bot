@@ -34,6 +34,8 @@ class RelayPlugin:
         self.account = account
         self.kvstore = kvstore
         self.crew = account.get_chat_by_id(kvstore.get("crew_id"))
+        if not kvstore.get("relays"):
+            kvstore.set("relays", list())
 
     @account_hookimpl
     def ac_incoming_message(self, message: deltachat.Message):
@@ -99,23 +101,12 @@ class RelayPlugin:
 
     def forward_to_outside(self, message: deltachat.Message):
         """forward an answer to an outsider."""
-        bot_localpart = self.account.get_config("addr").split("@")[0]
-        title_prefix = f"[{bot_localpart}] "
-        chat_title = message.chat.get_name().split(title_prefix)[1]
-        logging.debug("stripped %s to %s", message.chat.get_name(), chat_title)
-        for chat in self.account.get_chats():
-            if chat_title == chat.get_name():
-                if message.quote.text in [msg.text for msg in chat.get_messages()]:
-                    outside_chat = chat
-                    break
-                else:
-                    logging.debug(
-                        "No corresponding message in chat %s with name: %s",
-                        chat.id,
-                        chat.get_name(),
-                    )
-        else:
-            logging.error("Couldn't find the chat with the title: %s", chat_title)
+        outside_chat = self.get_outside_chat(message.chat.id)
+        if not outside_chat:
+            logging.error(
+                "Couldn't find the corresponding outside chat for relay group %s",
+                message.chat.id,
+            )
             return
         outside_chat.send_msg(message)
 
@@ -124,15 +115,13 @@ class RelayPlugin:
         outsider = message.get_sender_contact().addr
         crew_members = self.crew.get_contacts()
         crew_members.remove(self.account.get_self_contact())
-        group_name = "[%s] %s" % (
-            self.account.get_config("addr").split("@")[0],
-            message.chat.get_name(),
-        )
-        for chat in self.account.get_chats():
-            if chat.get_name() == group_name:
-                relay_group = chat
-                break
-        else:
+        relay_group = self.get_relay_group(message.chat.id)
+
+        if not relay_group:
+            group_name = "[%s] %s" % (
+                self.account.get_config("addr").split("@")[0],
+                message.chat.get_name(),
+            )
             logging.info("creating new relay group: '%s'", group_name)
             relay_group = self.account.create_group_chat(
                 group_name, crew_members, verified=False
@@ -142,6 +131,10 @@ class RelayPlugin:
                 "This is the relay group for %s; I'll only forward 'direct replies' to the outside."
                 % (message.chat.get_name())
             )
+            relay_mappings = self.kvstore.get("relays")
+            relay_mappings.append(tuple([message.chat.id, relay_group.id]))
+            self.kvstore.set("relays", relay_mappings)
+
         message.set_override_sender_name(outsider)
         relay_group.send_msg(message)
 
@@ -162,3 +155,27 @@ class RelayPlugin:
             if crew_member not in chat.get_contacts():
                 return False  # all crew members have to be in any relay group
         return True
+
+    def get_outside_chat(self, relay_group_id: int) -> deltachat.Chat:
+        """Get the corresponding outside chat for the ID of a relay group.
+
+        :param relay_group_id: the chat.id of the relay group
+        :return: the outside chat
+        """
+        relay_mappings = self.kvstore.get("relays")
+        for mapping in relay_mappings:
+            if mapping[1] == relay_group_id:
+                return self.account.get_chat_by_id(mapping[0])
+        return None
+
+    def get_relay_group(self, outside_id: int) -> deltachat.Chat:
+        """Get the corresponding relay group for the ID of the outside chat.
+
+        :param outside_id: the chat.id of the outside chat
+        :return: the relay group
+        """
+        relay_mappings = self.kvstore.get("relays")
+        for mapping in relay_mappings:
+            if mapping[0] == outside_id:
+                return self.account.get_chat_by_id(mapping[1])
+        return None

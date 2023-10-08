@@ -5,6 +5,8 @@ import deltachat
 import pytest
 from _pytest.pytester import LineMatcher
 
+from teams_bot.bot import RelayPlugin
+
 
 class ClickRunner:
     def __init__(self, main):
@@ -73,6 +75,14 @@ def tmp_file_path(request, tmpdir):
         with open(path, "w+", encoding="utf-8") as f:
             f.write("test")
         return path
+
+
+@pytest.fixture
+def relaycrew(crew):
+    crew.bot.relayplugin = RelayPlugin(crew.bot)
+    crew.bot.add_account_plugin(crew.bot.relayplugin)
+    assert not crew.bot.relayplugin.is_relay_group(crew)
+    yield crew
 
 
 @pytest.fixture

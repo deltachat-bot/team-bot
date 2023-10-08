@@ -39,22 +39,22 @@ def teams_bot(ctx):
     "--password", type=str, default=None, help="the password of the email account"
 )
 @click.option(
-    "--db_dir", type=str, default="teams_bot_data", help="path to the bot's database"
+    "--dbdir", type=str, default="teams_bot_data", help="path to the bot's database"
 )
 @click.option(
     "-v", "--verbose", count=True, help="show low level delta chat ffi events"
 )
 @click.pass_context
-def init(ctx, email: str, password: str, db_dir: str, verbose: int):
+def init(ctx, email: str, password: str, dbdir: str, verbose: int):
     """Configure bot; create crew; add user to crew by scanning a QR code."""
-    db_dir = pathlib.Path(db_dir)
-    delta_db = db_dir.joinpath("delta.sqlite")
-    pickle_path = db_dir.joinpath("pickle.db")
+    dbdir = pathlib.Path(dbdir)
+    delta_db = str(dbdir.joinpath("delta.sqlite"))
+    pickle_path = dbdir.joinpath("pickle.db")
     kvstore = pickledb.load(pickle_path, True)
 
     set_log_level(verbose, delta_db)
 
-    ac = deltachat.Account(str(delta_db))
+    ac = deltachat.Account(delta_db)
     ac.run_account(addr=email, password=password, show_ffi=verbose)
     ac.set_config("mvbox_move", "1")
     ac.set_config("sentbox_watch", "0")
@@ -121,23 +121,22 @@ def init(ctx, email: str, password: str, db_dir: str, verbose: int):
 
 @teams_bot.command()
 @click.option(
-    "--db_dir", type=str, default="teams_bot_data", help="path to the bot's database"
+    "--dbdir", type=str, default="teams_bot_data", help="path to the bot's database"
 )
 @click.option(
     "-v", "--verbose", count=True, help="show low level delta chat ffi events"
 )
 @click.pass_context
-def run(ctx, db_dir: str, verbose: int):
+def run(ctx, dbdir: str, verbose: int):
     """Run the bot, so it relays messages between the crew and the outside."""
-    db_dir = pathlib.Path(db_dir)
-    delta_db = db_dir.joinpath("delta.sqlite")
-    pickle_path = db_dir.joinpath("pickle.db")
+    dbdir = pathlib.Path(dbdir)
+    delta_db = str(dbdir.joinpath("delta.sqlite"))
+    pickle_path = dbdir.joinpath("pickle.db")
     kvstore = pickledb.load(pickle_path, True)
 
-    logging.debug("delta_db: %s", type(delta_db))
     set_log_level(verbose, delta_db)
 
-    ac = deltachat.Account(str(delta_db))
+    ac = deltachat.Account(delta_db)
     display_name = ac.get_config("displayname")
     ac.run_account(account_plugins=[RelayPlugin(ac, kvstore)], show_ffi=verbose)
     ac.set_config("displayname", display_name)

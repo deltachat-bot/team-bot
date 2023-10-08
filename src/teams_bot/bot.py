@@ -58,7 +58,11 @@ class RelayPlugin:
                 if arguments[0] == "/help":
                     self.reply(message.chat, help_message(), quote=message)
                 if arguments[0] == "/set_name":
-                    self.reply(message.chat, set_display_name(self.account, arguments[1]), quote=message)
+                    self.reply(
+                        message.chat,
+                        set_display_name(self.account, arguments[1]),
+                        quote=message,
+                    )
                 if arguments[0] == "/set_avatar":
                     result = set_avatar(self.account, message)
                     self.reply(message.chat, result, quote=message)
@@ -92,7 +96,7 @@ class RelayPlugin:
 
     def forward_to_outside(self, message: deltachat.Message):
         """forward an answer to an outsider."""
-        bot_localpart = self.account.get_config('addr').split('@')[0]
+        bot_localpart = self.account.get_config("addr").split("@")[0]
         title_prefix = f"[{bot_localpart}] "
         chat_title = message.chat.get_name().split(title_prefix)[1]
         logging.debug("stripped %s to %s", message.chat.get_name(), chat_title)
@@ -102,7 +106,11 @@ class RelayPlugin:
                     outside_chat = chat
                     break
                 else:
-                    logging.debug("No corresponding message in chat %s with name: %s", chat.id, chat.get_name())
+                    logging.debug(
+                        "No corresponding message in chat %s with name: %s",
+                        chat.id,
+                        chat.get_name(),
+                    )
         else:
             logging.error("Couldn't find the chat with the title: %s", chat_title)
             return

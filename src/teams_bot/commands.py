@@ -2,6 +2,7 @@ import logging
 
 import deltachat
 
+
 def help_message() -> str:
     """Get the help message
 

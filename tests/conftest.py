@@ -1,4 +1,6 @@
 import os
+
+import pickledb
 import requests
 
 import deltachat
@@ -79,14 +81,14 @@ def tmp_file_path(request, tmpdir):
 
 @pytest.fixture
 def relaycrew(crew):
-    crew.bot.relayplugin = RelayPlugin(crew.bot)
+    crew.bot.relayplugin = RelayPlugin(crew.bot, crew.kvstore)
     crew.bot.add_account_plugin(crew.bot.relayplugin)
     assert not crew.bot.relayplugin.is_relay_group(crew)
     yield crew
 
 
 @pytest.fixture
-def crew(teams_bot, teams_user):
+def crew(teams_bot, teams_user, tmpdir):
     from teams_bot.bot import SetupPlugin
 
     crew = teams_bot.create_group_chat(
@@ -109,6 +111,8 @@ def crew(teams_bot, teams_user):
         print("User received message:", last_message)
         last_message = teams_user.wait_next_incoming_message().text
 
+    crew.kvstore = pickledb.load(tmpdir + "pickle.db", True)
+    crew.kvstore.set("crew_id", crew.id)
     yield crew
 
 

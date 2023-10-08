@@ -1,11 +1,12 @@
 import logging
 from threading import Event
 
+import pickledb
 import deltachat
 from deltachat import account_hookimpl
 from deltachat.capi import lib as dclib
 
-from .commands import help_message, set_display_name, set_avatar, get_crew_id
+from .commands import help_message, set_display_name, set_avatar
 
 
 class SetupPlugin:
@@ -29,8 +30,10 @@ class SetupPlugin:
 
 
 class RelayPlugin:
-    def __init__(self, account: deltachat.Account):
+    def __init__(self, account: deltachat.Account, kvstore: pickledb.PickleDB):
         self.account = account
+        self.kvstore = kvstore
+        self.crew = account.get_chat_by_id(kvstore.get("crew_id"))
 
     @account_hookimpl
     def ac_incoming_message(self, message: deltachat.Message):
@@ -47,7 +50,7 @@ class RelayPlugin:
             """:TODO handle chat name changes"""
             return
 
-        if message.chat.id == get_crew_id(self.account):
+        if message.chat.id == self.crew.id:
             if message.text.startswith("/"):
                 logging.debug(
                     "handling command by %s: %s",
@@ -64,7 +67,7 @@ class RelayPlugin:
                         quote=message,
                     )
                 if arguments[0] == "/set_avatar":
-                    result = set_avatar(self.account, message)
+                    result = set_avatar(self.account, message, self.crew)
                     self.reply(message.chat, result, quote=message)
             else:
                 logging.debug("Ignoring message, just the crew chatting")
@@ -119,9 +122,7 @@ class RelayPlugin:
     def forward_to_relay_group(self, message: deltachat.Message):
         """forward a request to a relay group; create one if it doesn't exist yet."""
         outsider = message.get_sender_contact().addr
-        crew_members = self.account.get_chat_by_id(
-            get_crew_id(self.account)
-        ).get_contacts()
+        crew_members = self.crew.get_contacts()
         crew_members.remove(self.account.get_self_contact())
         group_name = "[%s] %s" % (
             self.account.get_config("addr").split("@")[0],
@@ -157,9 +158,7 @@ class RelayPlugin:
             return False  # all relay groups were started by the teamsbot
         if chat.is_protected():
             return False  # relay groups don't need to be protected, so they are not
-        for crew_member in self.account.get_chat_by_id(
-            get_crew_id(self.account)
-        ).get_contacts():
+        for crew_member in self.crew.get_contacts():
             if crew_member not in chat.get_contacts():
                 return False  # all crew members have to be in any relay group
         return True

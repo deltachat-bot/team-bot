@@ -1,11 +1,13 @@
 import logging
+import pathlib
 import sys
 
+import pickledb
 import click
 import qrcode
 import deltachat
 
-from .bot import SetupPlugin, RelayPlugin, get_crew_id
+from .bot import SetupPlugin, RelayPlugin
 
 
 def set_log_level(verbose: int, db: str):
@@ -37,22 +39,27 @@ def teams_bot(ctx):
     "--password", type=str, default=None, help="the password of the email account"
 )
 @click.option(
-    "--db", type=str, default="bot.db/db.sqlite", help="path to the bot's database"
+    "--db_dir", type=str, default="teams_bot_data", help="path to the bot's database"
 )
 @click.option(
     "-v", "--verbose", count=True, help="show low level delta chat ffi events"
 )
 @click.pass_context
-def init(ctx, email: str, password: str, db: str, verbose: int):
+def init(ctx, email: str, password: str, db_dir: str, verbose: int):
     """Configure bot; create crew; add user to crew by scanning a QR code."""
-    set_log_level(verbose, db)
+    db_dir = pathlib.Path(db_dir)
+    delta_db = db_dir.joinpath("delta.sqlite")
+    pickle_path = db_dir.joinpath("pickle.db")
+    kvstore = pickledb.load(pickle_path, True)
 
-    ac = deltachat.Account(db)
+    set_log_level(verbose, delta_db)
+
+    ac = deltachat.Account(str(delta_db))
     ac.run_account(addr=email, password=password, show_ffi=verbose)
     ac.set_config("mvbox_move", "1")
     ac.set_config("sentbox_watch", "0")
 
-    crew_id_old = get_crew_id(ac)
+    crew_id_old = kvstore.get("crew_id")
 
     chat = ac.create_group_chat(
         "Team: {}".format(ac.get_config("addr")), contacts=[], verified=True
@@ -87,13 +94,20 @@ def init(ctx, email: str, password: str, db: str, verbose: int):
 
     if crew_id_old:
         setupplugin.message_sent.clear()
+        old_crew = ac.get_chat_by_id(crew_id_old)
+        old_crew.set_name(f"Old Team: {ac.get_config('addr')}")
+        new_crew = [contact.addr for contact in chat.get_contacts()]
+        new_crew_emails = " or ".join(new_crew)
+        quit_message = f"There is a new Group for the Team now; you can ask {new_crew_emails} to add you to it."
+        logging.debug(
+            "Sending quit message to old crew with ID %s: %s",
+            old_crew.id,
+            quit_message,
+        )
         try:
-            new_crew_id = get_crew_id(
-                ac, setupplugin
-            )  # notify old crew about who created the new crew
-            assert (
-                new_crew_id == chat.id
-            ), f"Bot found different 'new crew' than the one we just created; consider deleting {db}"
+            old_crew.send_text(quit_message)
+            setupplugin.outgoing_messages += 1
+            old_crew.remove_contact(ac.get_self_contact())
             setupplugin.message_sent.wait()
         except ValueError as e:
             logging.warning("Could not notify the old crew: %s", str(e))
@@ -101,22 +115,31 @@ def init(ctx, email: str, password: str, db: str, verbose: int):
     sys.stdout.flush()  # flush stdout to actually show the messages above
     ac.shutdown()
 
+    kvstore.set("crew_id", chat.id)
+    logging.info("Successfully changed crew ID to the new group.")
+
 
 @teams_bot.command()
 @click.option(
-    "--db", type=str, default="bot.db/db.sqlite", help="path to the bot's database"
+    "--db_dir", type=str, default="teams_bot_data", help="path to the bot's database"
 )
 @click.option(
     "-v", "--verbose", count=True, help="show low level delta chat ffi events"
 )
 @click.pass_context
-def run(ctx, db: str, verbose: int):
+def run(ctx, db_dir: str, verbose: int):
     """Run the bot, so it relays messages between the crew and the outside."""
-    set_log_level(verbose, db)
+    db_dir = pathlib.Path(db_dir)
+    delta_db = db_dir.joinpath("delta.sqlite")
+    pickle_path = db_dir.joinpath("pickle.db")
+    kvstore = pickledb.load(pickle_path, True)
 
-    ac = deltachat.Account(db)
+    logging.debug("delta_db: %s", type(delta_db))
+    set_log_level(verbose, delta_db)
+
+    ac = deltachat.Account(str(delta_db))
     display_name = ac.get_config("displayname")
-    ac.run_account(account_plugins=[RelayPlugin(ac)], show_ffi=verbose)
+    ac.run_account(account_plugins=[RelayPlugin(ac, kvstore)], show_ffi=verbose)
     ac.set_config("displayname", display_name)
     try:
         ac.wait_shutdown()

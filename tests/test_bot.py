@@ -1,8 +1,6 @@
 import deltachat
 from deltachat.capi import lib as dclib
 
-from teams_bot.commands import get_crew_id
-
 
 def test_not_relay_groups(relaycrew, outsider):
     bot = relaycrew.bot
@@ -71,10 +69,7 @@ def test_relay_group_forwarding(relaycrew, outsider):
         bot_relay_group.get_messages()[0].get_sender_contact() == bot.get_self_contact()
     )
     assert not bot_relay_group.is_protected()
-    assert (
-        bot.get_chat_by_id(get_crew_id(bot)).get_contacts()
-        == bot_relay_group.get_contacts()
-    )
+    assert relaycrew.get_contacts() == bot_relay_group.get_contacts()
     assert bot.relayplugin.is_relay_group(bot_relay_group)
 
     # send direct reply, should be forwarded

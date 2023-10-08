@@ -43,7 +43,8 @@ def deploy_teams_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str
     secrets = [
         f"TEAMS_INIT_EMAIL={bot_email}",
         f"TEAMS_INIT_PASSWORD={bot_passwd}",
-        f'TEAMS_DBDIR={dbdir}',
+        f'TEAMS_INIT_DBDIR={dbdir}',
+        f'TEAMS_RUN_DBDIR={dbdir}',
     ]
     env = "\n".join(secrets)
     files.put(

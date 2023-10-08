@@ -51,6 +51,43 @@ The bot only works as long as this command is running.
 Read more about [running bots on
 bots.delta.chat](https://bots.delta.chat/howto.html).
 
+
+### Deploy with pyinfra
+
+If you use [pyinfra](https://pyinfra.com/) to manage a server,
+you can deploy this bot with it.
+Just import it into your [deploy.py file](https://docs.pyinfra.com/en/2.x/getting-started.html#create-a-deploy) like this:
+
+```
+from teams_bot.pyinfra import deploy_teams_bot
+
+deploy_teams_bot(
+    unix_user='root',               # an existing UNIX user (doesn't need root or sudo privileges)
+    bot_email='team@example.org',   # the email address your team wants to use
+    bot_passwd='p4ssw0rd',          # the password to the email account
+)
+```
+
+After you deployed it,
+you need to do two steps manually:
+
+First,
+login to the user with ssh
+and run
+`export $(cat ~/.env | xargs) && ~/.local/lib/teams-bot.venv/bin/teams-bot init`
+to initialize the bot,
+create the crew,
+and join the crew.
+
+Then run
+`systemctl --user start teams-bot`
+to start the bot
+and keep it running in the background.
+
+You can view the log output
+with `journalctl --user -fu teams-bot`
+to confirm that it works.
+
 ## Development Environment
 
 To get started with developing,

@@ -32,7 +32,7 @@ with an email address
 you want to use as a team:
 
 ```
-teams-bot init --email das_synthikat@systemli.org --password p455w0rD
+teams-bot init --email helpdesk@example.org --password p455w0rD
 ```
 
 This command will show a QR code;
@@ -44,7 +44,7 @@ Now to run it,
 simply execute:
 
 ```
-teams-bot init --email das_synthikat@systemli.org --password p455w0rD
+teams-bot init --email helpdesk@example.org --password p455w0rD
 ```
 
 The bot only works as long as this command is running.
@@ -62,9 +62,9 @@ Just import it into your [deploy.py file](https://docs.pyinfra.com/en/2.x/gettin
 from teams_bot.pyinfra import deploy_teams_bot
 
 deploy_teams_bot(
-    unix_user='root',               # an existing UNIX user (doesn't need root or sudo privileges)
-    bot_email='team@example.org',   # the email address your team wants to use
-    bot_passwd='p4ssw0rd',          # the password to the email account
+    unix_user='root',                   # an existing UNIX user (doesn't need root or sudo privileges)
+    bot_email='helpdesk@example.org',   # the email address your team wants to use
+    bot_passwd='p4ssw0rd',              # the password to the email account
 )
 ```
 

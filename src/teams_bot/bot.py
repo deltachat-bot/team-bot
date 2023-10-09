@@ -5,7 +5,6 @@ import pickledb
 import deltachat
 from deltachat import account_hookimpl
 from deltachat.capi import lib as dclib
-from deltachat.message import _view_type_mapping
 
 from .commands import help_message, set_display_name, set_avatar, start_chat
 
@@ -75,22 +74,13 @@ class RelayPlugin:
                     result = set_avatar(self.account, message, self.crew)
                     self.reply(message.chat, result, quote=message)
                 if arguments[0] == "/start_chat":
-                    recipients = arguments[1].split(",")
-                    title = arguments[2].replace('_', ' ')
-                    words = []
-                    for i in range(3, len(arguments)):
-                        words.append(arguments[i])
                     outside_chat, result = start_chat(
                         self.account,
-                        recipients,
-                        title,
-                        " ".join(words),
-                        message.filename if message.filename else "",
-                        self.get_message_view_type(message),
+                        message,
                     )
                     if "success" in result:
                         for msg in outside_chat.get_messages():
-                            self.forward_to_relay_group(msg)
+                            self.forward_to_relay_group(msg, started_by_crew=True)
                     self.reply(message.chat, result, quote=message)
             else:
                 logging.debug("Ignoring message, just the crew chatting")
@@ -131,7 +121,7 @@ class RelayPlugin:
             return
         outside_chat.send_msg(message)
 
-    def forward_to_relay_group(self, message: deltachat.Message):
+    def forward_to_relay_group(self, message: deltachat.Message, started_by_crew=False):
         """forward a request to a relay group; create one if it doesn't exist yet."""
         outsider = message.get_sender_contact().addr
         crew_members = self.crew.get_contacts()
@@ -148,10 +138,14 @@ class RelayPlugin:
                 group_name, crew_members, verified=False
             )
             # relay_group.set_profile_image("assets/avatar.jpg")
-            relay_group.send_text(
-                "This is the relay group for %s; I'll only forward 'direct replies' to the outside."
-                % (message.chat.get_name())
-            )
+            if started_by_crew:
+                explanation = f"We started a chat with {message.chat.get_name()}. This was our first message:"
+            else:
+                explanation = (
+                    f"This is the relay group for {message.chat.get_name()}; "
+                    "I'll only forward 'direct replies' to the outside."
+                )
+            relay_group.send_text(explanation)
             relay_mappings = self.kvstore.get("relays")
             relay_mappings.append(tuple([message.chat.id, relay_group.id]))
             self.kvstore.set("relays", relay_mappings)
@@ -200,9 +194,3 @@ class RelayPlugin:
             if mapping[0] == outside_id:
                 return self.account.get_chat_by_id(mapping[1])
         return None
-
-    def get_message_view_type(self, message: deltachat.Message) -> str:
-        """Get the view_type of a Message."""
-        for view_name, view_code in _view_type_mapping.items():
-            if view_code == message._view_type:
-                return view_name

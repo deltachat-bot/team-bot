@@ -2,6 +2,7 @@ import logging
 
 import deltachat
 from deltachat.capi import lib as dclib
+from deltachat.message import _view_type_mapping
 
 
 def help_message() -> str:
@@ -44,37 +45,47 @@ def set_avatar(
 
 def start_chat(
     ac: deltachat.Account,
-    recipients: [],
-    title: str,
-    text: str,
-    attachment: str,
-    view_type: str,
+    command: deltachat.Message,
 ) -> (deltachat.Chat, str):
     """Start a chat with one or more outsiders.
 
     :param ac: the account object of the bot
-    :param recipients: A list with email addresses to be added to the group
-    :param title: The title of the group
-    :param text: The test of the first message
-    :param attachment: (optional) an attachment, can be empty string
-    :param view_type: the view_type of the message
+    :param command: the message with the command
     :return: the outside chat and a success/failure message
     """
+    arguments = command.text.split(" ")
+    recipients = arguments[1].split(",")
+    title = arguments[2].replace("_", " ")
+    words = []
+    for i in range(3, len(arguments)):
+        words.append(arguments[i])
+    text = " ".join(words)
+    attachment = command.filename if command.filename else ""
+    view_type = get_message_view_type(command)
+
     logging.info(
-        "Sending message to %s with subject '%s': %s",
+        "Sending %s message to %s with subject '%s': %s",
+        view_type,
         ", ".join(recipients),
         title,
         text,
     )
     chat = ac.create_group_chat(title, recipients)
-    msg = deltachat.Message.new_empty(ac, view_type=view_type)
+    msg = deltachat.Message.new_empty(ac, view_type)
     msg.set_text(text)
     if attachment:
         logging.info("Message has a %s attachment with path %s", view_type, attachment)
-        msg.set_file(attachment, view_type)
+        msg.set_file(attachment)
     sent_id = dclib.dc_send_msg(ac._dc_context, chat.id, msg._dc_msg)
     if sent_id == msg.id:
         return chat, "Chat successfully created."
     else:
         logging.error("Can't send message. sent_id: %s, msg.id: %s", sent_id, msg.id)
         return chat, "Something went wrong...\n\n" + help_message()
+
+
+def get_message_view_type(message: deltachat.Message) -> str:
+    """Get the view_type of a Message."""
+    for view_name, view_code in _view_type_mapping.items():
+        if view_code == message._view_type:
+            return view_name

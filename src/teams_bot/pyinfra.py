@@ -21,6 +21,7 @@ def deploy_teams_bot(
         name="Pull the teams-bot repository",
         src="https://git.0x90.space/missytake/teams-bot",
         dest=f"/home/{unix_user}/teams-bot",
+        rebase=True,
         _su_user=unix_user,
         _use_su_login=True,
     )

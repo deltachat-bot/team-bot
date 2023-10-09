@@ -65,7 +65,9 @@ class RelayPlugin:
                 if arguments[0] == "/set_name":
                     self.reply(
                         message.chat,
-                        set_display_name(self.account, arguments[1]),
+                        set_display_name(
+                            self.account, message.text.split("/set_name ")[1]
+                        ),
                         quote=message,
                     )
                 if arguments[0] == "/set_avatar":

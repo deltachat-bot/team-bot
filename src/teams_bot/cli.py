@@ -50,7 +50,7 @@ def teams_bot(ctx):
 )
 @click.pass_context
 def init(ctx, email: str, password: str, dbdir: str, verbose: int):
-    """Configure bot; create crew; add user to crew by scanning a QR code."""
+    """Scan a QR code to create a crew and join it"""
     dbdir = pathlib.Path(dbdir)
     delta_db = str(dbdir.joinpath("delta.sqlite"))
     pickle_path = dbdir.joinpath("pickle.db")
@@ -136,7 +136,7 @@ def init(ctx, email: str, password: str, dbdir: str, verbose: int):
 )
 @click.pass_context
 def run(ctx, dbdir: str, verbose: int):
-    """Run the bot, so it relays messages between the crew and the outside."""
+    """Run the bot, so it relays messages from and to the outside"""
     dbdir = pathlib.Path(dbdir)
     delta_db = str(dbdir.joinpath("delta.sqlite"))
     pickle_path = dbdir.joinpath("pickle.db")
@@ -155,6 +155,41 @@ def run(ctx, dbdir: str, verbose: int):
         print("Shutting down...")
         ac.shutdown()
         ac.wait_shutdown()
+
+
+@teams_bot.command()
+@click.option(
+    "--dbdir",
+    type=str,
+    default="teams_bot_data",
+    help="path to the bot's database",
+    envvar="TEAMS_DBDIR",
+)
+@click.option(
+    "-v", "--verbose", count=True, help="show low level delta chat ffi events"
+)
+@click.pass_context
+def verify_crypto(ctx, dbdir: str, verbose: int):
+    """Show a QR code to verify the encryption with the bot"""
+    dbdir = pathlib.Path(dbdir)
+    delta_db = str(dbdir.joinpath("delta.sqlite"))
+
+    set_log_level(verbose, delta_db)
+
+    ac = deltachat.Account(delta_db)
+    ac.run_account(show_ffi=verbose)
+
+    setup_contact = ac.get_setup_contact_qr()
+    qr = qrcode.QRCode()
+    qr.add_data(setup_contact)
+    print(
+        "\nPlease scan this qr code with Delta Chat to verify the bot:\n\n"
+    )
+    qr.print_ascii(invert=True)
+    print(
+        "\nAlternatively, copy-paste this invite to your Delta Chat desktop client:",
+        setup_contact,
+    )
 
 
 def main():

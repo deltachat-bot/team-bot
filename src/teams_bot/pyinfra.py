@@ -6,7 +6,9 @@ from pyinfra import host
 from pyinfra.facts.systemd import SystemdStatus
 
 
-def deploy_teams_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str = None):
+def deploy_teams_bot(
+    unix_user: str, bot_email: str, bot_passwd: str, dbdir: str = None
+):
     """Deploy TeamsBot to a UNIX user, with specified credentials
 
     :param unix_user: the existing UNIX user of the bot
@@ -26,7 +28,9 @@ def deploy_teams_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str
     if clone_xdcget.changed:
         server.script(
             name="Setup virtual environment for teams-bot",
-            src=importlib.resources.files(__package__) / "pyinfra_assets" / "setup-venv.sh",
+            src=importlib.resources.files(__package__)
+            / "pyinfra_assets"
+            / "setup-venv.sh",
             _su_user=unix_user,
             _use_su_login=True,
         )
@@ -43,7 +47,7 @@ def deploy_teams_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str
     if not dbdir:
         dbdir = f"/home/{unix_user}/.config/teams_bot/{bot_email}/"
     secrets = [
-        f'TEAMS_DBDIR={dbdir}',
+        f"TEAMS_DBDIR={dbdir}",
         f"TEAMS_INIT_EMAIL={bot_email}",
         f"TEAMS_INIT_PASSWORD={bot_passwd}",
     ]
@@ -66,7 +70,9 @@ def deploy_teams_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str
 
     files.template(
         name="upload teams-bot systemd unit",
-        src=importlib.resources.files(__package__) / "pyinfra_assets" / "teams-bot.service.j2",
+        src=importlib.resources.files(__package__)
+        / "pyinfra_assets"
+        / "teams-bot.service.j2",
         dest=f"/home/{unix_user}/.config/systemd/user/teams-bot.service",
         user=unix_user,
         unix_user=unix_user,
@@ -85,12 +91,18 @@ def deploy_teams_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str
         commands=[f"loginctl enable-linger {unix_user}"],
     )
 
-    services = host.get_fact(SystemdStatus, user_mode=True, user_name=unix_user, _su_user=unix_user, _use_su_login=True)
+    services = host.get_fact(
+        SystemdStatus,
+        user_mode=True,
+        user_name=unix_user,
+        _su_user=unix_user,
+        _use_su_login=True,
+    )
     try:
-        if services['teams-bot.service']:
+        if services["teams-bot.service"]:
             systemd.service(
                 name=f"{unix_user}: restart teams-bot systemd service",
-                service='teams-bot.service',
+                service="teams-bot.service",
                 running=True,
                 restarted=True,
                 user_mode=True,

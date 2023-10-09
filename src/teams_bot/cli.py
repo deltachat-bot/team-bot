@@ -39,7 +39,11 @@ def teams_bot(ctx):
     "--password", type=str, default=None, help="the password of the email account"
 )
 @click.option(
-    "--dbdir", type=str, default="teams_bot_data", help="path to the bot's database", envvar="TEAMS_DBDIR"
+    "--dbdir",
+    type=str,
+    default="teams_bot_data",
+    help="path to the bot's database",
+    envvar="TEAMS_DBDIR",
 )
 @click.option(
     "-v", "--verbose", count=True, help="show low level delta chat ffi events"
@@ -121,7 +125,11 @@ def init(ctx, email: str, password: str, dbdir: str, verbose: int):
 
 @teams_bot.command()
 @click.option(
-    "--dbdir", type=str, default="teams_bot_data", help="path to the bot's database", envvar="TEAMS_DBDIR"
+    "--dbdir",
+    type=str,
+    default="teams_bot_data",
+    help="path to the bot's database",
+    envvar="TEAMS_DBDIR",
 )
 @click.option(
     "-v", "--verbose", count=True, help="show low level delta chat ffi events"

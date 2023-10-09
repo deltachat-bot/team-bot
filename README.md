@@ -72,17 +72,24 @@ After you deployed it,
 you need to do two steps manually:
 
 First,
-login to the user with ssh
-and run
-`export $(cat ~/.env | xargs) && ~/.local/lib/teams-bot.venv/bin/teams-bot init`
 to initialize the bot,
 create the crew,
-and join the crew.
+and join the crew,
+login to the user with ssh
+and run:
 
-Then run
-`systemctl --user start teams-bot`
+```
+export $(cat ~/.env | xargs) && ~/.local/lib/teams-bot.venv/bin/teams-bot init
+```
+
+Then,
 to start the bot
-and keep it running in the background.
+and keep it running in the background,
+run:
+
+```
+systemctl --user start teams-bot
+```
 
 You can view the log output
 with `journalctl --user -fu teams-bot`

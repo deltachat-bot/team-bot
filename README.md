@@ -44,7 +44,7 @@ Now to run it,
 simply execute:
 
 ```
-teams-bot init --email helpdesk@example.org --password p455w0rD
+teams-bot run -v
 ```
 
 The bot only works as long as this command is running.

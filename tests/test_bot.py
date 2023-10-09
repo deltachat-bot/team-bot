@@ -1,7 +1,9 @@
 import deltachat
+import pytest
 from deltachat.capi import lib as dclib
 
 
+@pytest.mark.timeout(60)
 def test_not_relay_groups(relaycrew, outsider):
     bot = relaycrew.bot
     user = relaycrew.user
@@ -37,6 +39,7 @@ def test_not_relay_groups(relaycrew, outsider):
     assert not bot.relayplugin.is_relay_group(bot_message_from_user.chat)
 
 
+@pytest.mark.timeout(60)
 def test_relay_group_forwarding(relaycrew, outsider):
     bot = relaycrew.bot
     user = relaycrew.user

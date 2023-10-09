@@ -182,9 +182,7 @@ def verify_crypto(ctx, dbdir: str, verbose: int):
     setup_contact = ac.get_setup_contact_qr()
     qr = qrcode.QRCode()
     qr.add_data(setup_contact)
-    print(
-        "\nPlease scan this qr code with Delta Chat to verify the bot:\n\n"
-    )
+    print("\nPlease scan this qr code with Delta Chat to verify the bot:\n\n")
     qr.print_ascii(invert=True)
     print(
         "\nAlternatively, copy-paste this invite to your Delta Chat desktop client:",

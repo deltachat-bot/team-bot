@@ -55,9 +55,9 @@ class RelayPlugin:
             else:
                 logging.debug("This is a system message in an outside group.")
                 relay_group = self.get_relay_group(message.chat.id)
-                if 'image changed by' in message.text:
+                if "image changed by" in message.text:
                     relay_group.set_profile_image(message.chat.get_profile_image())
-                if 'name changed from' in message.text:
+                if "name changed from" in message.text:
                     group_name = "[%s] %s" % (
                         self.account.get_config("addr").split("@")[0],
                         message.chat.get_name(),

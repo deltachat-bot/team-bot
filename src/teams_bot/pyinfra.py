@@ -86,13 +86,16 @@ def deploy_teams_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str
     )
 
     services = host.get_fact(SystemdStatus, user_mode=True, user_name=unix_user, _su_user=unix_user, _use_su_login=True)
-    if services['teams-bot.service']:
-        systemd.service(
-            name=f"{unix_user}: retart systemd service",
-            service='teams-bot.service',
-            running=True,
-            restarted=True,
-            user_mode=True,
-            _su_user=unix_user,
-            _use_su_login=True,
-        )
+    try:
+        if services['teams-bot.service']:
+            systemd.service(
+                name=f"{unix_user}: restart teams-bot systemd service",
+                service='teams-bot.service',
+                running=True,
+                restarted=True,
+                user_mode=True,
+                _su_user=unix_user,
+                _use_su_login=True,
+            )
+    except KeyError:
+        pass

@@ -2,6 +2,8 @@ from io import StringIO
 import importlib.resources
 
 from pyinfra.operations import git, server, files, systemd
+from pyinfra import host
+from pyinfra.facts.systemd import SystemdStatus
 
 
 def deploy_teams_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str = None):
@@ -82,3 +84,15 @@ def deploy_teams_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str
         name=f"enable {unix_user}'s systemd units to auto-start at boot",
         commands=[f"loginctl enable-linger {unix_user}"],
     )
+
+    services = host.get_fact(SystemdStatus, user_mode=True, user_name=unix_user, _su_user=unix_user, _use_su_login=True)
+    if services['teams-bot.service']:
+        systemd.service(
+            name=f"{unix_user}: retart systemd service",
+            service='teams-bot.service',
+            running=True,
+            restarted=True,
+            user_mode=True,
+            _su_user=unix_user,
+            _use_su_login=True,
+        )

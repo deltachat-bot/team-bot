@@ -103,7 +103,7 @@ run:
 ```
 python3 -m venv venv
 . venv/bin/activate
-pip install pytest tox black pytest-xdist
+pip install pytest tox black pytest-xdist pytest-timeout
 pip install -e .
 DCC_NEW_TMP_EMAIL='https://ci.testrun.org/new_email?t=1h_2364962873z' tox
 ```

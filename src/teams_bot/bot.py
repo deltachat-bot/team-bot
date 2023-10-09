@@ -48,8 +48,21 @@ class RelayPlugin:
         )
 
         if message.is_system_message():
-            logging.debug("This is a system message")
-            """:TODO handle chat name changes"""
+            if message.chat.id == self.crew.id:
+                return
+            if self.is_relay_group(message.chat):
+                logging.debug("This is a system message in a relay group.")
+            else:
+                logging.debug("This is a system message in an outside group.")
+                relay_group = self.get_relay_group(message.chat.id)
+                if 'image changed by' in message.text:
+                    relay_group.set_profile_image(message.chat.get_profile_image())
+                if 'name changed from' in message.text:
+                    group_name = "[%s] %s" % (
+                        self.account.get_config("addr").split("@")[0],
+                        message.chat.get_name(),
+                    )
+                    relay_group.set_name(group_name)
             return
 
         if message.chat.id == self.crew.id:
@@ -137,7 +150,8 @@ class RelayPlugin:
             relay_group = self.account.create_group_chat(
                 group_name, crew_members, verified=False
             )
-            # relay_group.set_profile_image("assets/avatar.jpg")
+            if message.chat.get_profile_image():
+                relay_group.set_profile_image(message.chat.get_profile_image())
             if started_by_crew:
                 explanation = f"We started a chat with {message.chat.get_name()}. This was our first message:"
             else:

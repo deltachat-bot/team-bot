@@ -107,7 +107,11 @@ class RelayPlugin:
                         help_message = message.text.split("/set_outside_help ")[1]
                     except IndexError:
                         set_outside_help(self.kvstore, "")
-                        return self.reply(message.chat, "Removed help message for outsiders", quote=message)
+                        return self.reply(
+                            message.chat,
+                            "Removed help message for outsiders",
+                            quote=message,
+                        )
                     set_outside_help(self.kvstore, help_message)
                     self.reply(
                         message.chat,
@@ -132,7 +136,9 @@ class RelayPlugin:
 
         else:
             if message.text.startswith("/help"):
-                logging.info("Outsider %s asked for help", message.get_sender_contact().addr)
+                logging.info(
+                    "Outsider %s asked for help", message.get_sender_contact().addr
+                )
                 help_message = outside_help(self.kvstore)
                 if help_message == False:
                     help_message = f"I forward messages to the {self.account.get_config('displayname')} team."

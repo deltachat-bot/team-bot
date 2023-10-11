@@ -6,7 +6,14 @@ import deltachat
 from deltachat import account_hookimpl
 from deltachat.capi import lib as dclib
 
-from .commands import help_message, set_display_name, set_avatar, start_chat
+from .commands import (
+    crew_help,
+    set_display_name,
+    set_avatar,
+    start_chat,
+    outside_help,
+    set_outside_help,
+)
 
 
 class SetupPlugin:
@@ -74,7 +81,7 @@ class RelayPlugin:
                 )
                 arguments = message.text.split(" ")
                 if arguments[0] == "/help":
-                    self.reply(message.chat, help_message(), quote=message)
+                    self.reply(message.chat, crew_help(), quote=message)
                 if arguments[0] == "/set_name":
                     self.reply(
                         message.chat,
@@ -95,6 +102,18 @@ class RelayPlugin:
                         for msg in outside_chat.get_messages():
                             self.forward_to_relay_group(msg, started_by_crew=True)
                     self.reply(message.chat, result, quote=message)
+                if arguments[0] == "/set_outside_help":
+                    try:
+                        help_message = message.text.split("/set_outside_help ")[1]
+                    except IndexError:
+                        set_outside_help(self.kvstore, "")
+                        return self.reply(message.chat, "Removed help message for outsiders", quote=message)
+                    set_outside_help(self.kvstore, help_message)
+                    self.reply(
+                        message.chat,
+                        f"Set help message for outsiders to {help_message}",
+                        quote=message,
+                    )
             else:
                 logging.debug("Ignoring message, just the crew chatting")
 
@@ -112,6 +131,22 @@ class RelayPlugin:
                 logging.debug("Ignoring message, just the crew chatting")
 
         else:
+            if message.text.startswith("/help"):
+                logging.info("Outsider %s asked for help", message.get_sender_contact().addr)
+                help_message = outside_help(self.kvstore)
+                if help_message == False:
+                    help_message = f"I forward messages to the {self.account.get_config('displayname')} team."
+                if help_message == "":
+                    logging.debug(
+                        "Help message empty, forwarding message to relay group"
+                    )
+                else:
+                    logging.info(
+                        "Sending help text to %s: %s",
+                        message.get_sender_contact().addr,
+                        help_message,
+                    )
+                    return self.reply(message.chat, help_message, quote=message)
             logging.debug("Forwarding message to relay group")
             self.forward_to_relay_group(message)
 
@@ -132,6 +167,7 @@ class RelayPlugin:
                 message.chat.id,
             )
             return
+        """:TODO don't forward if message is the explanation message"""
         outside_chat.send_msg(message)
 
     def forward_to_relay_group(self, message: deltachat.Message, started_by_crew=False):

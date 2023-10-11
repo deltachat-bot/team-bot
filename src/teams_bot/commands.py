@@ -1,22 +1,42 @@
 import logging
 
 import deltachat
+import pickledb
 from deltachat.capi import lib as dclib
 from deltachat.message import _view_type_mapping
 
 
-def help_message() -> str:
-    """Get the help message
+def crew_help() -> str:
+    """Get the help message for the crew chat
 
     :return: the help message
     """
     help_text = """
 Start a chat:\t/start_chat alice@example.org,bob@example.org Chat_Title Hello friends!
-Change the bot's name:\t/set_name <name>
-Change the bot's avatar:\t/set_avatar (attach image)
+Change the bot's name:\t/set_name Name
+Change the bot's avatar:\t/set_avatar <attach image>
 Show this help text:\t\t/help
+Change the help message for outsiders:\t/set_outside_help Hello outsider
     """
     return help_text
+
+
+def outside_help(kvstore: pickledb.PickleDB) -> str:
+    """Get the help message for outsiders
+
+    :param kvstore: the pickledDB key-value-store
+    :return: the help message
+    """
+    return kvstore.get("outside_help_message")
+
+
+def set_outside_help(kvstore: pickledb.PickleDB, help_message: str):
+    """Set the help message for outsiders
+
+    :param kvstore: the pickeDB key-value-store
+    """
+    logging.debug("Setting outside_help_message to %s", help_message)
+    kvstore.set("outside_help_message", help_message)
 
 
 def set_display_name(account: deltachat.Account, display_name: str) -> str:
@@ -81,7 +101,7 @@ def start_chat(
         return chat, "Chat successfully created."
     else:
         logging.error("Can't send message. sent_id: %s, msg.id: %s", sent_id, msg.id)
-        return chat, "Something went wrong...\n\n" + help_message()
+        return chat, "Something went wrong...\n\n" + crew_help()
 
 
 def get_message_view_type(message: deltachat.Message) -> str:

@@ -101,3 +101,74 @@ def test_relay_group_forwarding(relaycrew, outsider):
     # check that outsider's reply ends up in the same chat
     user_second_message_from_outsider = user.wait_next_incoming_message()
     assert user_second_message_from_outsider.chat == user_relay_group
+
+
+def test_default_outside_help(relaycrew, outsider):
+    bot = relaycrew.bot
+    user = relaycrew.user
+
+    # create outside chat
+    outsider_botcontact = outsider.create_contact(bot.get_config("addr"))
+    outsider_outside_chat = outsider.create_chat(outsider_botcontact)
+    outsider_outside_chat.send_text("/help")
+
+    # get response
+    outside_help_message = outsider.wait_next_incoming_message()
+    assert "I forward messages to the " in outside_help_message.text
+
+    # assert no relay group was created
+    assert len(bot.get_chats()) == 2
+    assert len(user.get_chats()) == 1
+
+
+def test_empty_outside_help(relaycrew, outsider):
+    bot = relaycrew.bot
+    user = relaycrew.user
+
+    # set outside_help_message empty
+    for chat in user.get_chats():
+        print(chat.id, chat.get_name())
+    user_crew = user.get_chat_by_id(11)
+    assert user_crew.get_name().startswith("Team")
+    user_crew.send_text("/set_outside_help")
+    # ensure /set_outside_help arrives before sending /help
+    bot.wait_next_incoming_message()
+
+    # create outside chat
+    outsider_botcontact = outsider.create_contact(bot.get_config("addr"))
+    outsider_outside_chat = outsider.create_chat(outsider_botcontact)
+    outsider_outside_chat.send_text("/help")
+
+    # get forwarded /help message
+    user.wait_next_incoming_message()  # group added message
+    user.wait_next_incoming_message()  # explanation message
+    user_forwarded_message_from_outsider = user.wait_next_incoming_message()
+    assert user_forwarded_message_from_outsider.text == "/help"
+
+
+def test_changed_outside_help(relaycrew, outsider):
+    bot = relaycrew.bot
+    user = relaycrew.user
+
+    # set outside_help_message empty
+    for chat in user.get_chats():
+        print(chat.id, chat.get_name())
+    user_crew = user.get_chat_by_id(11)
+    assert user_crew.get_name().startswith("Team")
+    outside_help_text = "Hi friend :) send me messages to chat with the team"
+    user_crew.send_text("/set_outside_help " + outside_help_text)
+    # ensure /set_outside_help arrives before sending /help
+    bot.wait_next_incoming_message()
+
+    # create outside chat
+    outsider_botcontact = outsider.create_contact(bot.get_config("addr"))
+    outsider_outside_chat = outsider.create_chat(outsider_botcontact)
+    outsider_outside_chat.send_text("/help")
+
+    # get response
+    outside_help_message = outsider.wait_next_incoming_message()
+    assert outside_help_message.text == outside_help_text
+
+    # assert no relay group was created
+    assert len(bot.get_chats()) == 2
+    assert len(user.get_chats()) == 1

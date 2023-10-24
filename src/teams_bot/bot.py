@@ -140,7 +140,7 @@ class RelayPlugin:
                     "Outsider %s asked for help", message.get_sender_contact().addr
                 )
                 help_message = outside_help(self.kvstore)
-                if help_message == False:
+                if help_message is False:
                     help_message = f"I forward messages to the {self.account.get_config('displayname')} team."
                 if help_message == "":
                     logging.debug(

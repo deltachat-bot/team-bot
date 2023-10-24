@@ -1,3 +1,5 @@
+import os.path
+
 import deltachat
 import pytest
 from deltachat.capi import lib as dclib
@@ -177,3 +179,39 @@ def test_changed_outside_help(relaycrew, outsider):
     # assert no relay group was created
     assert len(bot.get_chats()) == 2
     assert len(user.get_chats()) == 1
+
+
+def test_change_avatar(relaycrew):
+    bot = relaycrew.bot
+    user = relaycrew.user
+
+    for contact in user.get_contacts():
+        if contact.addr == bot.get_config("addr"):
+            assert not contact.get_profile_image()
+            botcontact = contact
+            break
+    else:
+        pytest.fail("bot contact not found")
+
+    example_png_path = "/usr/share/pixmaps/debian-logo.png"
+    if not os.path.exists(example_png_path):
+        pytest.skip(f"example image not available: {example_png_path}")
+
+    # set avatar to example image
+    for chat in user.get_chats():
+        print(chat.id, chat.get_name())
+    user_crew = user.get_chat_by_id(11)
+    assert user_crew.get_name().startswith("Team")
+    msg = deltachat.Message.new_empty(user, "image")
+    msg.set_text("/set_avatar")
+    msg.set_file(example_png_path)
+    sent_id = dclib.dc_send_msg(user._dc_context, user_crew.id, msg._dc_msg)
+    assert sent_id == msg.id
+
+    group_avatar_changed_msg = user.wait_next_incoming_message()
+    assert "Group image changed" in group_avatar_changed_msg.text
+    assert user_crew.get_profile_image()
+
+    confirmation_msg = user.wait_next_incoming_message()
+    assert confirmation_msg.text == "Avatar changed to this image."
+    assert botcontact.get_profile_image()

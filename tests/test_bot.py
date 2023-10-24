@@ -102,6 +102,11 @@ def test_relay_group_forwarding(relaycrew, outsider):
     user_second_message_from_outsider = user.wait_next_incoming_message()
     assert user_second_message_from_outsider.chat == user_relay_group
 
+    # check that relay group explanation is not forwarded to outsider
+    for chat in outsider.get_chats():
+        for msg in chat.get_messages():
+            assert "This is the relay group for" not in msg.text
+
 
 def test_default_outside_help(relaycrew, outsider):
     bot = relaycrew.bot

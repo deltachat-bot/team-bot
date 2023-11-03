@@ -17,7 +17,7 @@ def deploy_teams_bot(
     :param dbdir: the directory where the bot's data will be stored. default: ~/.config/teams-bot/email@example.org
     """
 
-    clone_xdcget = git.repo(
+    clone_repo = git.repo(
         name="Pull the teams-bot repository",
         src="https://git.0x90.space/missytake/teams-bot",
         dest=f"/home/{unix_user}/teams-bot",
@@ -26,7 +26,7 @@ def deploy_teams_bot(
         _use_su_login=True,
     )
 
-    if clone_xdcget.changed:
+    if clone_repo.changed:
         server.script(
             name="Setup virtual environment for teams-bot",
             src=importlib.resources.files(__package__)

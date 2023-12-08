@@ -1,4 +1,5 @@
 import logging
+import time
 from threading import Event
 
 import pickledb
@@ -43,6 +44,25 @@ class RelayPlugin:
         self.crew = account.get_chat_by_id(kvstore.get("crew_id"))
         if not kvstore.get("relays"):
             kvstore.set("relays", list())
+
+    @account_hookimpl
+    def ac_outgoing_message(self, message: deltachat.Message):
+        while not message.is_out_delivered():
+            time.sleep(0.1)
+            if message.is_out_failed():
+                break
+        begin = int(time.time())
+        while not message.is_out_failed():
+            time.sleep(0.1)
+            if int(time.time()) < begin + 10:
+                break  # it probably just worked.
+        else:
+            error = message.get_message_info()
+            logging.warning(
+                "Outgoing message failed. Forwarding error to relay group: %s", error
+            )
+            relay_group = self.get_relay_group(message.chat.id)
+            relay_group.send_text(f"Sending Message failed:\n\n{error}")
 
     @account_hookimpl
     def ac_incoming_message(self, message: deltachat.Message):

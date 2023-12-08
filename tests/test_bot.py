@@ -6,6 +6,9 @@ import pytest
 from deltachat.capi import lib as dclib
 
 
+TIMEOUT = 20
+
+
 @pytest.mark.timeout(60)
 def test_not_relay_groups(relaycrew, outsider):
     bot = relaycrew.bot
@@ -218,7 +221,6 @@ def test_change_avatar(relaycrew):
     assert botcontact.get_profile_image()
 
 
-@pytest.mark.xfail(reason="Forwarding errors is not implemented yet")
 def test_forward_sending_errors_to_relay_group(relaycrew):
     usercrew = relaycrew.user.get_chats()[-1]
     usercrew.send_text("/start_chat alice@example.org This_Message_will_fail test")
@@ -229,16 +231,22 @@ def test_forward_sending_errors_to_relay_group(relaycrew):
     outgoing_message = out_chat.get_messages()[-1]
     print(outgoing_message)
     begin = int(time.time())
-    while not outgoing_message.is_out_failed() and int(time.time()) < begin + 10:
+    while not outgoing_message.is_out_failed() and int(time.time()) < begin + TIMEOUT:
         time.sleep(0.1)
     assert outgoing_message.is_out_failed()
-    while len(out_chat.get_messages()) < 3 and int(time.time()) < begin + 10:
+
+    while len(relaycrew.user.get_chats()) < 2 and int(time.time()) < begin + TIMEOUT:
+        time.sleep(0.1)
+    relay_group = relaycrew.user.get_chats()[-2]
+
+    while len(relay_group.get_messages()) < 3 and int(time.time()) < begin + TIMEOUT:
+        print(relay_group.get_messages()[-1].text)
         time.sleep(0.1)
     assert (
         "Recipient address rejected: Domain example.org does not accept mail"
-        not in out_chat.get_messages()[-1].text
+        not in relay_group.get_messages()[-1].text
     )
     assert (
         "Invalid unencrypted mail to <alice@example.org>"
-        in out_chat.get_messages()[-1].text
+        in relay_group.get_messages()[-1].text
     )

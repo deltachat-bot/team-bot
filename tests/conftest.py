@@ -141,7 +141,7 @@ def outsider(tmpdir):
 
 
 def account(db_path, show_ffi=False):
-    token = os.environ.get("DCC_NEW_TMP_EMAIL")
+    token = os.environ.get("DCC_NEW_TMP_EMAIL", "https://nine.testrun.org/cgi-bin/newemail.py")
     print(token)
     ac = deltachat.Account(str(db_path))
     credentials = requests.post(token).json()

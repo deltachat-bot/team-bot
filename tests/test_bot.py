@@ -1,4 +1,5 @@
 import os.path
+import time
 
 import deltachat
 import pytest
@@ -215,3 +216,29 @@ def test_change_avatar(relaycrew):
     confirmation_msg = user.wait_next_incoming_message()
     assert confirmation_msg.text == "Avatar changed to this image."
     assert botcontact.get_profile_image()
+
+
+@pytest.mark.xfail(reason="Forwarding errors is not implemented yet")
+def test_forward_sending_errors_to_relay_group(relaycrew):
+    usercrew = relaycrew.user.get_chats()[-1]
+    usercrew.send_text("/start_chat alice@example.org This_Message_will_fail test")
+
+    while len(relaycrew.bot.get_chats()) < 3:
+        time.sleep(0.1)
+    out_chat = relaycrew.bot.get_chats()[-1]
+    outgoing_message = out_chat.get_messages()[-1]
+    print(outgoing_message)
+    begin = int(time.time())
+    while not outgoing_message.is_out_failed() and int(time.time()) < begin + 10:
+        time.sleep(0.1)
+    assert outgoing_message.is_out_failed()
+    while len(out_chat.get_messages()) < 3 and int(time.time()) < begin + 10:
+        time.sleep(0.1)
+    assert (
+        "Recipient address rejected: Domain example.org does not accept mail"
+        not in out_chat.get_messages()[-1].text
+    )
+    assert (
+        "Invalid unencrypted mail to <alice@example.org>"
+        in out_chat.get_messages()[-1].text
+    )

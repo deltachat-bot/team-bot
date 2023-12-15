@@ -88,7 +88,7 @@ and keep it running in the background,
 run:
 
 ```
-systemctl --user start teams-bot
+systemctl --user enable --now teams-bot
 ```
 
 You can view the log output
@@ -105,5 +105,5 @@ python3 -m venv venv
 . venv/bin/activate
 pip install pytest tox black pytest-xdist pytest-timeout
 pip install -e .
-DCC_NEW_TMP_EMAIL='https://ci.testrun.org/new_email?t=1h_2364962873z' tox
+tox
 ```

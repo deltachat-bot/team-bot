@@ -59,9 +59,9 @@ def init(ctx, email: str, password: str, dbdir: str, verbose: int):
     set_log_level(verbose, delta_db)
 
     ac = deltachat.Account(delta_db)
-    ac.run_account(addr=email, password=password, show_ffi=verbose)
     ac.set_config("mvbox_move", "1")
     ac.set_config("sentbox_watch", "0")
+    ac.run_account(addr=email, password=password, show_ffi=verbose)
 
     crew_id_old = kvstore.get("crew_id")
 

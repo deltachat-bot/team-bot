@@ -194,7 +194,11 @@ class RelayPlugin:
             )
             return
         """:TODO don't forward if message is the explanation message"""
-        outside_chat.send_msg(message)
+        try:
+            outside_chat.send_msg(message)
+        except Exception as e:
+            self.reply(message.chat, "Sending message failed.", quote=message)
+            raise e
 
     def forward_to_relay_group(self, message: deltachat.Message, started_by_crew=False):
         """forward a request to a relay group; create one if it doesn't exist yet."""

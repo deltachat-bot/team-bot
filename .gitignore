@@ -6,3 +6,4 @@ __pycache__/
 /venv/
 bot.db/
 teams_bot_data/
+team_bot_data/

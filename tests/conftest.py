@@ -7,7 +7,7 @@ import deltachat
 import pytest
 from _pytest.pytester import LineMatcher
 
-from teams_bot.bot import RelayPlugin
+from team_bot.bot import RelayPlugin
 
 
 class ClickRunner:
@@ -65,9 +65,9 @@ def _perform_match(output, fnl):
 @pytest.fixture
 def cmd():
     """invoke a command line subcommand."""
-    from teams_bot.cli import teams_bot
+    from team_bot.cli import team_bot
 
-    return ClickRunner(teams_bot)
+    return ClickRunner(team_bot)
 
 
 @pytest.fixture
@@ -88,28 +88,28 @@ def relaycrew(crew):
 
 
 @pytest.fixture
-def crew(teams_bot, teams_user, tmpdir):
-    from teams_bot.bot import SetupPlugin
+def crew(team_bot, team_user, tmpdir):
+    from team_bot.bot import SetupPlugin
 
-    crew = teams_bot.create_group_chat(
-        f"Team: {teams_bot.get_config('addr')}", verified=True
+    crew = team_bot.create_group_chat(
+        f"Team: {team_bot.get_config('addr')}", verified=True
     )
     setupplugin = SetupPlugin(crew.id)
-    teams_bot.add_account_plugin(setupplugin)
+    team_bot.add_account_plugin(setupplugin)
     qr = crew.get_join_qr()
-    teams_user.qr_join_chat(qr)
+    team_user.qr_join_chat(qr)
     setupplugin.member_added.wait(timeout=30)
-    crew.user = teams_user
-    crew.bot = teams_bot
+    crew.user = team_user
+    crew.bot = team_bot
     crew.bot.setupplugin = setupplugin
 
     # wait until old user is properly added to crew
-    last_message = teams_user.wait_next_incoming_message().text
+    last_message = team_user.wait_next_incoming_message().text
     while (
-        f"Member Me ({teams_user.get_config('addr')}) added by bot" not in last_message
+        f"Member Me ({team_user.get_config('addr')}) added by bot" not in last_message
     ):
         print("User received message:", last_message)
-        last_message = teams_user.wait_next_incoming_message().text
+        last_message = team_user.wait_next_incoming_message().text
 
     crew.kvstore = pickledb.load(tmpdir + "pickle.db", True)
     crew.kvstore.set("crew_id", crew.id)
@@ -117,7 +117,7 @@ def crew(teams_bot, teams_user, tmpdir):
 
 
 @pytest.fixture
-def teams_bot(tmpdir):
+def team_bot(tmpdir):
     ac = account(tmpdir + "/bot.sqlite", show_ffi=True)
     yield ac
     ac.shutdown()
@@ -125,7 +125,7 @@ def teams_bot(tmpdir):
 
 
 @pytest.fixture
-def teams_user(tmpdir):
+def team_user(tmpdir):
     ac = account(tmpdir + "/user.sqlite")
     yield ac
     ac.shutdown()

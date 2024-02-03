@@ -29,11 +29,11 @@ def set_log_level(verbose: int, db: str):
     cls=click.Group, context_settings={"help_option_names": ["-h", "--help"]}
 )
 @click.pass_context
-def teams_bot(ctx):
+def team_bot(ctx):
     """This bot connects your team to the outside and makes it addressable."""
 
 
-@teams_bot.command()
+@team_bot.command()
 @click.option("--email", type=str, default=None, help="the email account for the bot")
 @click.option(
     "--password", type=str, default=None, help="the password of the email account"
@@ -41,7 +41,7 @@ def teams_bot(ctx):
 @click.option(
     "--dbdir",
     type=str,
-    default="teams_bot_data",
+    default="team_bot_data",
     help="path to the bot's database",
     envvar="TEAMS_DBDIR",
 )
@@ -123,11 +123,11 @@ def init(ctx, email: str, password: str, dbdir: str, verbose: int):
     logging.info("Successfully changed crew ID to the new group.")
 
 
-@teams_bot.command()
+@team_bot.command()
 @click.option(
     "--dbdir",
     type=str,
-    default="teams_bot_data",
+    default="team_bot_data",
     help="path to the bot's database",
     envvar="TEAMS_DBDIR",
 )
@@ -157,11 +157,11 @@ def run(ctx, dbdir: str, verbose: int):
         ac.wait_shutdown()
 
 
-@teams_bot.command()
+@team_bot.command()
 @click.option(
     "--dbdir",
     type=str,
-    default="teams_bot_data",
+    default="team_bot_data",
     help="path to the bot's database",
     envvar="TEAMS_DBDIR",
 )
@@ -191,7 +191,7 @@ def verify_crypto(ctx, dbdir: str, verbose: int):
 
 
 def main():
-    teams_bot(auto_envvar_prefix="TEAMS")
+    team_bot(auto_envvar_prefix="TEAMS")
 
 
 if __name__ == "__main__":

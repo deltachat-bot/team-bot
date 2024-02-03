@@ -1,4 +1,4 @@
-# Teams Bot
+# Team Bot
 
 This bot connects your team to the outside
 and makes it addressable.
@@ -22,8 +22,8 @@ To install this bot,
 run:
 
 ```
-git clone https://git.0x90.space/missytake/teams-bot
-cd teams-bot
+git clone https://github.com/deltachat-bot/team-bot
+cd team-bot
 pip install .
 ```
 
@@ -32,19 +32,19 @@ with an email address
 you want to use as a team:
 
 ```
-teams-bot init --email helpdesk@example.org --password p455w0rD
+team-bot init --email helpdesk@example.org --password p455w0rD
 ```
 
 This command will show a QR code;
 scan it with Delta Chat
 to become part of the "team",
-the verified group which manages the Teams Bot.
+the verified group which manages the Team Bot.
 
 Now to run it,
 simply execute:
 
 ```
-teams-bot run -v
+team-bot run -v
 ```
 
 The bot only works as long as this command is running.
@@ -59,9 +59,9 @@ you can deploy this bot with it.
 Just import it into your [deploy.py file](https://docs.pyinfra.com/en/2.x/getting-started.html#create-a-deploy) like this:
 
 ```
-from teams_bot.pyinfra import deploy_teams_bot
+from team_bot.pyinfra import deploy_team_bot
 
-deploy_teams_bot(
+deploy_team_bot(
     unix_user='root',                   # an existing UNIX user (doesn't need root or sudo privileges)
     bot_email='helpdesk@example.org',   # the email address your team wants to use
     bot_passwd='p4ssw0rd',              # the password to the email account
@@ -79,7 +79,7 @@ login to the user with ssh
 and run:
 
 ```
-export $(cat ~/.env | xargs) && ~/.local/lib/teams-bot.venv/bin/teams-bot init
+export $(cat ~/.env | xargs) && ~/.local/lib/team-bot.venv/bin/team-bot init
 ```
 
 Then,
@@ -88,11 +88,11 @@ and keep it running in the background,
 run:
 
 ```
-systemctl --user enable --now teams-bot
+systemctl --user enable --now team-bot
 ```
 
 You can view the log output
-with `journalctl --user -fu teams-bot`
+with `journalctl --user -fu team-bot`
 to confirm that it works.
 
 ## Development Environment

@@ -239,12 +239,12 @@ class RelayPlugin:
         if not chat.get_name().startswith(
             "[%s] " % (self.account.get_config("addr").split("@")[0],)
         ):
-            return False  # all relay groups' names begin with a [tag] with the localpart of the teamsbot's address
+            return False  # all relay groups' names begin with a [tag] with the localpart of the team-bot's address
         if (
             chat.get_messages()[0].get_sender_contact()
             != self.account.get_self_contact()
         ):
-            return False  # all relay groups were started by the teamsbot
+            return False  # all relay groups were started by the team-bot
         if chat.is_protected():
             return False  # relay groups don't need to be protected, so they are not
         for crew_member in self.crew.get_contacts():

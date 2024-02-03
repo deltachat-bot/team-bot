@@ -6,7 +6,7 @@ from pyinfra import host
 from pyinfra.facts.systemd import SystemdStatus
 
 
-def deploy_teams_bot(
+def deploy_team_bot(
     unix_user: str, bot_email: str, bot_passwd: str, dbdir: str = None
 ):
     """Deploy TeamsBot to a UNIX user, with specified credentials
@@ -14,13 +14,13 @@ def deploy_teams_bot(
     :param unix_user: the existing UNIX user of the bot
     :param bot_email: the email address for the bot account
     :param bot_passwd: the password for the bot's email account
-    :param dbdir: the directory where the bot's data will be stored. default: ~/.config/teams-bot/email@example.org
+    :param dbdir: the directory where the bot's data will be stored. default: ~/.config/team-bot/email@example.org
     """
 
     clone_repo = git.repo(
-        name="Pull the teams-bot repository",
-        src="https://git.0x90.space/missytake/teams-bot",
-        dest=f"/home/{unix_user}/teams-bot",
+        name="Pull the team-bot repository",
+        src="https://github.com/deltachat-bot/team-bot",
+        dest=f"/home/{unix_user}/team-bot",
         rebase=True,
         _su_user=unix_user,
         _use_su_login=True,
@@ -28,7 +28,7 @@ def deploy_teams_bot(
 
     if clone_repo.changed:
         server.script(
-            name="Setup virtual environment for teams-bot",
+            name="Setup virtual environment for team-bot",
             src=importlib.resources.files(__package__)
             / "pyinfra_assets"
             / "setup-venv.sh",
@@ -37,16 +37,16 @@ def deploy_teams_bot(
         )
 
         server.shell(
-            name="Compile teams-bot",
+            name="Compile team-bot",
             commands=[
-                f". .local/lib/teams-bot.venv/bin/activate && cd /home/{unix_user}/teams-bot && pip install ."
+                f". .local/lib/team-bot.venv/bin/activate && cd /home/{unix_user}/team-bot && pip install ."
             ],
             _su_user=unix_user,
             _use_su_login=True,
         )
 
     if not dbdir:
-        dbdir = f"/home/{unix_user}/.config/teams_bot/{bot_email}/"
+        dbdir = f"/home/{unix_user}/.config/team_bot/{bot_email}/"
     secrets = [
         f"TEAMS_DBDIR={dbdir}",
         f"TEAMS_INIT_EMAIL={bot_email}",
@@ -70,18 +70,18 @@ def deploy_teams_bot(
     )
 
     files.template(
-        name="upload teams-bot systemd unit",
+        name="upload team-bot systemd unit",
         src=importlib.resources.files(__package__)
         / "pyinfra_assets"
-        / "teams-bot.service.j2",
-        dest=f"/home/{unix_user}/.config/systemd/user/teams-bot.service",
+        / "team-bot.service.j2",
+        dest=f"/home/{unix_user}/.config/systemd/user/team-bot.service",
         user=unix_user,
         unix_user=unix_user,
         bot_email=bot_email,
     )
 
     systemd.daemon_reload(
-        name=f"{unix_user}: load teams-bot systemd service",
+        name=f"{unix_user}: load team-bot systemd service",
         user_name=unix_user,
         user_mode=True,
         _su_user=unix_user,
@@ -101,10 +101,10 @@ def deploy_teams_bot(
         _use_su_login=True,
     )
     try:
-        if services["teams-bot.service"]:
+        if services["team-bot.service"]:
             systemd.service(
-                name=f"{unix_user}: restart teams-bot systemd service",
-                service="teams-bot.service",
+                name=f"{unix_user}: restart team-bot systemd service",
+                service="team-bot.service",
                 running=True,
                 restarted=True,
                 user_mode=True,

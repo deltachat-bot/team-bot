@@ -40,6 +40,7 @@ class SetupPlugin:
 class RelayPlugin:
     def __init__(self, account: deltachat.Account, kvstore: pickledb.PickleDB):
         self.account = account
+        self.account.set_config("bcc_self", "1")
         self.kvstore = kvstore
         self.crew = account.get_chat_by_id(kvstore.get("crew_id"))
         if not kvstore.get("relays"):

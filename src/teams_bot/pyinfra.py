@@ -80,11 +80,6 @@ def deploy_teams_bot(
         bot_email=bot_email,
     )
 
-    server.shell(
-        name=f"enable {unix_user}'s systemd units to auto-start at boot",
-        commands=[f"loginctl enable-linger {unix_user}"],
-    )
-
     systemd.daemon_reload(
         name=f"{unix_user}: load teams-bot systemd service",
         user_name=unix_user,

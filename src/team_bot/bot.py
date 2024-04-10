@@ -68,12 +68,6 @@ class RelayPlugin:
     @account_hookimpl
     def ac_incoming_message(self, message: deltachat.Message):
         """This method is called on every incoming message and decides what to do with it."""
-        logging.info(
-            "New message from %s in chat %s: %s",
-            message.get_sender_contact().addr,
-            message.chat.get_name(),
-            message.text,
-        )
 
         if message.is_system_message():
             if message.chat.id == self.crew.id:

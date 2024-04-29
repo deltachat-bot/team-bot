@@ -3,6 +3,7 @@
 __pycache__/
 /.tox/
 /build/
+/dist/
 /venv/
 bot.db/
 teams_bot_data/

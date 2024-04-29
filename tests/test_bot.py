@@ -9,6 +9,19 @@ from deltachat.capi import lib as dclib
 TIMEOUT = 20
 
 
+def get_user_crew(crewuser: deltachat.Account) -> deltachat.Chat:
+    """Get the Team chat from the team member's point of view.
+
+    :param crewuser: the account object of the team member
+    :return: the chat object of the team chat
+    """
+    for chat in crewuser.get_chats():
+        print(chat.id, chat.get_name())
+    user_crew = crewuser.get_chat_by_id(11)
+    assert user_crew.get_name().startswith("Team")
+    return user_crew
+
+
 @pytest.mark.timeout(60)
 def test_not_relay_groups(relaycrew, outsider):
     bot = relaycrew.bot
@@ -202,10 +215,7 @@ def test_change_avatar(relaycrew):
         pytest.skip(f"example image not available: {example_png_path}")
 
     # set avatar to example image
-    for chat in user.get_chats():
-        print(chat.id, chat.get_name())
-    user_crew = user.get_chat_by_id(11)
-    assert user_crew.get_name().startswith("Team")
+    user_crew = get_user_crew(user)
     msg = deltachat.Message.new_empty(user, "image")
     msg.set_text("/set_avatar")
     msg.set_file(example_png_path)

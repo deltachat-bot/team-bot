@@ -80,7 +80,7 @@ def tmp_file_path(request, tmpdir):
 
 
 @pytest.fixture
-def relaycrew(crew):
+def relaycrew(crew) -> deltachat.Chat:
     crew.bot.relayplugin = RelayPlugin(crew.bot, crew.kvstore)
     crew.bot.add_account_plugin(crew.bot.relayplugin)
     assert not crew.bot.relayplugin.is_relay_group(crew)
@@ -88,7 +88,7 @@ def relaycrew(crew):
 
 
 @pytest.fixture
-def crew(team_bot, team_user, tmpdir):
+def crew(team_bot, team_user, tmpdir) -> deltachat.Chat:
     from team_bot.bot import SetupPlugin
 
     crew = team_bot.create_group_chat(
@@ -104,12 +104,8 @@ def crew(team_bot, team_user, tmpdir):
     crew.bot.setupplugin = setupplugin
 
     # wait until old user is properly added to crew
-    last_message = team_user.wait_next_incoming_message().text
-    while (
-        f"Member Me ({team_user.get_config('addr')}) added by bot" not in last_message
-    ):
-        print("User received message:", last_message)
-        last_message = team_user.wait_next_incoming_message().text
+    team_user._evtracker.wait_securejoin_joiner_progress(1000)
+    team_user._evtracker.wait_next_incoming_message()  # member added message
 
     crew.kvstore = pickledb.load(tmpdir + "pickle.db", True)
     crew.kvstore.set("crew_id", crew.id)
@@ -117,7 +113,7 @@ def crew(team_bot, team_user, tmpdir):
 
 
 @pytest.fixture
-def team_bot(tmpdir):
+def team_bot(tmpdir) -> deltachat.Account:
     ac = account(tmpdir + "/bot.sqlite", show_ffi=True)
     yield ac
     ac.shutdown()
@@ -125,7 +121,7 @@ def team_bot(tmpdir):
 
 
 @pytest.fixture
-def team_user(tmpdir):
+def team_user(tmpdir) -> deltachat.Account:
     ac = account(tmpdir + "/user.sqlite")
     yield ac
     ac.shutdown()
@@ -133,19 +129,20 @@ def team_user(tmpdir):
 
 
 @pytest.fixture
-def outsider(tmpdir):
+def outsider(tmpdir) -> deltachat.Account:
     ac = account(tmpdir + "/outsider.sqlite")
     yield ac
     ac.shutdown()
     ac.wait_shutdown()
 
 
-def account(db_path, show_ffi=False):
+def account(db_path, show_ffi=False) -> deltachat.Account:
     token = os.environ.get(
         "DCC_NEW_TMP_EMAIL", "https://nine.testrun.org/cgi-bin/newemail.py"
     )
     print(token)
     ac = deltachat.Account(str(db_path))
+    ac._evtracker = ac.add_account_plugin(deltachat.events.FFIEventTracker(ac))
     credentials = requests.post(token).json()
     email = credentials["email"]
     password = credentials["password"]

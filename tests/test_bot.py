@@ -22,43 +22,47 @@ def get_user_crew(crewuser: deltachat.Account) -> deltachat.Chat:
     return user_crew
 
 
-@pytest.mark.timeout(60)
-def test_not_relay_groups(relaycrew, outsider):
+@pytest.mark.timeout(TIMEOUT)
+def test_not_relay_groups(relaycrew, outsider, lp):
     bot = relaycrew.bot
     user = relaycrew.user
 
-    # bot <-> outsider 1:1 chat
+    lp.sec("bot <-> outsider 1:1 chat")
     outsider_botcontact = outsider.create_contact(bot.get_config("addr"))
     outsider_outside_chat = outsider.create_chat(outsider_botcontact)
     outsider_outside_chat.send_text("test 1:1 message to bot")
 
-    bot_message_from_outsider = bot.wait_next_incoming_message()
+    bot_message_from_outsider = bot._evtracker.wait_next_incoming_message()
     bot_outside_chat = bot_message_from_outsider.chat
     assert not bot.relayplugin.is_relay_group(bot_outside_chat)
 
-    # bot <-> outsider group chat
+    lp.sec("bot <-> outsider group chat")
     outsider_bot_group = outsider.create_group_chat(
         "test with outsider", contacts=[outsider_botcontact]
     )
     outsider_bot_group.send_text("test message to outsider group")
-    bot_message_from_outsider = bot.wait_next_incoming_message()
+    bot_message_from_outsider = bot._evtracker.wait_next_incoming_message()
     assert not bot.relayplugin.is_relay_group(bot_message_from_outsider.chat)
 
-    # bot <-> user 1:1 chat
+    lp.sec("bot <-> user 1:1 chat")
     user_botcontact = user.create_contact(bot.get_config("addr"))
     user_to_bot = user.create_chat(user_botcontact)
     user_to_bot.send_text("test message to bot")
-    bot_message_from_user = bot.wait_next_incoming_message()
+    # somehow the message doesn't trigger DC_EVENT_INCOMING_MSG
+    bot_message_from_user = bot.get_chats()[-3].get_messages()[-1]  # bot._evtracker.wait_next_incoming_message()
+    while bot_message_from_user.text != "test message to bot":
+        bot_message_from_user = bot.get_chats()[-3].get_messages()[-1]  # bot._evtracker.wait_next_incoming_message()
+        time.sleep(1)
     assert not bot.relayplugin.is_relay_group(bot_message_from_user.chat)
 
-    # bot <-> user group chat
+    lp.sec("bot <-> user group chat")
     user_group = user.create_group_chat("test with user", contacts=[user_botcontact])
     user_group.send_text("testing message to user group")
-    bot_message_from_user = bot.wait_next_incoming_message()
+    bot_message_from_user = bot._evtracker.wait_next_incoming_message()
     assert not bot.relayplugin.is_relay_group(bot_message_from_user.chat)
 
 
-@pytest.mark.timeout(60)
+@pytest.mark.timeout(TIMEOUT)
 def test_relay_group_forwarding(relaycrew, outsider):
     bot = relaycrew.bot
     user = relaycrew.user
@@ -69,18 +73,17 @@ def test_relay_group_forwarding(relaycrew, outsider):
     outsider_outside_chat.send_text("test 1:1 message to bot")
 
     # get outside chat
-    message_from_outsider = bot.wait_next_incoming_message()
+    message_from_outsider = bot._evtracker.wait_next_incoming_message()
     bot_outside_chat = message_from_outsider.chat
     assert not bot.relayplugin.is_relay_group(bot_outside_chat)
 
     # get relay group
-    user.wait_next_incoming_message()  # group added message
-    user_forwarded_message_from_outsider = user.wait_next_incoming_message()
+    user_forwarded_message_from_outsider = user._evtracker.wait_next_incoming_message()
     user_relay_group = user_forwarded_message_from_outsider.create_chat()
     user_relay_group.send_text(
         "Chatter in relay group"
     )  # send normal reply, not forwarded
-    bot_chatter_in_relay_group = bot.wait_next_incoming_message()
+    bot_chatter_in_relay_group = bot._evtracker.wait_next_incoming_message()
     bot_relay_group = bot_chatter_in_relay_group.chat
 
     # check if relay group has relay group properties
@@ -104,7 +107,7 @@ def test_relay_group_forwarding(relaycrew, outsider):
     assert sent_id == user_direct_reply.id
 
     # check that direct reply was forwarded to outsider
-    outsider_direct_reply = outsider.wait_next_incoming_message()
+    outsider_direct_reply = outsider._evtracker.wait_next_incoming_message()
     assert outsider_direct_reply.text == "This should be forwarded to the outsider"
     assert outsider_direct_reply.chat == outsider_outside_chat
     assert outsider_direct_reply.get_sender_contact() == outsider_botcontact
@@ -118,7 +121,7 @@ def test_relay_group_forwarding(relaycrew, outsider):
     outsider_outside_chat.send_text("Second message by outsider")
 
     # check that outsider's reply ends up in the same chat
-    user_second_message_from_outsider = user.wait_next_incoming_message()
+    user_second_message_from_outsider = user._evtracker.wait_next_incoming_message()
     assert user_second_message_from_outsider.chat == user_relay_group
 
     # check that relay group explanation is not forwarded to outsider
@@ -127,6 +130,7 @@ def test_relay_group_forwarding(relaycrew, outsider):
             assert "This is the relay group for" not in msg.text
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_default_outside_help(relaycrew, outsider):
     bot = relaycrew.bot
     user = relaycrew.user
@@ -137,7 +141,7 @@ def test_default_outside_help(relaycrew, outsider):
     outsider_outside_chat.send_text("/help")
 
     # get response
-    outside_help_message = outsider.wait_next_incoming_message()
+    outside_help_message = outsider._evtracker.wait_next_incoming_message()
     assert "I forward messages to the " in outside_help_message.text
 
     # assert no relay group was created
@@ -145,6 +149,7 @@ def test_default_outside_help(relaycrew, outsider):
     assert len(user.get_chats()) == 1
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_empty_outside_help(relaycrew, outsider):
     bot = relaycrew.bot
     user = relaycrew.user
@@ -156,7 +161,7 @@ def test_empty_outside_help(relaycrew, outsider):
     assert user_crew.get_name().startswith("Team")
     user_crew.send_text("/set_outside_help")
     # ensure /set_outside_help arrives before sending /help
-    bot.wait_next_incoming_message()
+    bot._evtracker.wait_next_incoming_message()
 
     # create outside chat
     outsider_botcontact = outsider.create_contact(bot.get_config("addr"))
@@ -164,12 +169,13 @@ def test_empty_outside_help(relaycrew, outsider):
     outsider_outside_chat.send_text("/help")
 
     # get forwarded /help message
-    user.wait_next_incoming_message()  # group added message
-    user.wait_next_incoming_message()  # explanation message
-    user_forwarded_message_from_outsider = user.wait_next_incoming_message()
+    user._evtracker.wait_next_incoming_message()  # "Removed help message for outsiders"
+    user._evtracker.wait_next_incoming_message()  # explanation message
+    user_forwarded_message_from_outsider = user._evtracker.wait_next_incoming_message()
     assert user_forwarded_message_from_outsider.text == "/help"
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_changed_outside_help(relaycrew, outsider):
     bot = relaycrew.bot
     user = relaycrew.user
@@ -182,7 +188,7 @@ def test_changed_outside_help(relaycrew, outsider):
     outside_help_text = "Hi friend :) send me messages to chat with the team"
     user_crew.send_text("/set_outside_help " + outside_help_text)
     # ensure /set_outside_help arrives before sending /help
-    bot.wait_next_incoming_message()
+    bot._evtracker.wait_next_incoming_message()
 
     # create outside chat
     outsider_botcontact = outsider.create_contact(bot.get_config("addr"))
@@ -190,7 +196,7 @@ def test_changed_outside_help(relaycrew, outsider):
     outsider_outside_chat.send_text("/help")
 
     # get response
-    outside_help_message = outsider.wait_next_incoming_message()
+    outside_help_message = outsider._evtracker.wait_next_incoming_message()
     assert outside_help_message.text == outside_help_text
 
     # assert no relay group was created
@@ -198,6 +204,7 @@ def test_changed_outside_help(relaycrew, outsider):
     assert len(user.get_chats()) == 1
 
 
+@pytest.mark.timeout(TIMEOUT)
 def test_change_avatar(relaycrew):
     bot = relaycrew.bot
     user = relaycrew.user
@@ -222,15 +229,16 @@ def test_change_avatar(relaycrew):
     sent_id = dclib.dc_send_msg(user._dc_context, user_crew.id, msg._dc_msg)
     assert sent_id == msg.id
 
-    group_avatar_changed_msg = user.wait_next_incoming_message()
+    group_avatar_changed_msg = user._evtracker.wait_next_incoming_message()
     assert "Group image changed" in group_avatar_changed_msg.text
     assert user_crew.get_profile_image()
 
-    confirmation_msg = user.wait_next_incoming_message()
+    confirmation_msg = user._evtracker.wait_next_incoming_message()
     assert confirmation_msg.text == "Avatar changed to this image."
     assert botcontact.get_profile_image()
 
 
+@pytest.mark.timeout(TIMEOUT * 2)
 def test_forward_sending_errors_to_relay_group(relaycrew):
     usercrew = relaycrew.user.get_chats()[-1]
     usercrew.send_text("/start_chat alice@example.org This_Message_will_fail test")
@@ -247,7 +255,9 @@ def test_forward_sending_errors_to_relay_group(relaycrew):
 
     while len(relaycrew.user.get_chats()) < 2 and int(time.time()) < begin + TIMEOUT:
         time.sleep(0.1)
-    relay_group = relaycrew.user.get_chats()[-2]
+    for chat in relaycrew.user.get_chats():
+        if "This Message will fail" in chat.get_name():
+            relay_group = chat
 
     while len(relay_group.get_messages()) < 3 and int(time.time()) < begin + TIMEOUT:
         print(relay_group.get_messages()[-1].text)

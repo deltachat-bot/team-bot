@@ -270,3 +270,19 @@ def test_forward_sending_errors_to_relay_group(relaycrew):
         "Invalid unencrypted mail to <alice@example.org>"
         in relay_group.get_messages()[-1].text
     )
+
+
+@pytest.mark.timeout(TIMEOUT * 2)
+def test_public_invite(relaycrew, outsider):
+    crew = get_user_crew(relaycrew.user)
+    crew.send_text("/generate-invite")
+    result = relaycrew.user._evtracker.wait_next_incoming_message()
+    assert result.filename
+    assert result.text.startswith("https://i.delta.chat")
+
+    qr = result.filename
+    chat = outsider.qr_setup_contact(qr)
+
+    while not chat.is_protected():
+        print(chat.get_messages()[:-1].text)
+        time.sleep(1)

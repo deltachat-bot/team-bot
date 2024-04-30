@@ -15,6 +15,7 @@ def crew_help() -> str:
 Start a chat:\t/start_chat alice@example.org,bob@example.org Chat_Title Hello friends!
 Change the bot's name:\t/set_name Name
 Change the bot's avatar:\t/set_avatar <attach image>
+Generate invite link:\t\t/generate-invite
 Show this help text:\t\t/help
 Change the help message for outsiders:\t/set_outside_help Hello outsider
     """
@@ -61,6 +62,16 @@ def set_avatar(
     account.set_avatar(message.filename)
     crew.set_profile_image(message.filename)
     return "Avatar changed to this image."
+
+
+def generate_invite(account: deltachat.Account) -> str:
+    """Return a https://i.delta.chat invite link for chatting with the bot.
+
+    :return: the invite link, e.g.: https://i.delta.chat
+    """
+    openpgp4fpr = account.get_setup_contact_qr()
+    invite = "https://i.delta.chat/#" + openpgp4fpr[12::]
+    return invite
 
 
 def start_chat(

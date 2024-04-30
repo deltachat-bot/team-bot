@@ -272,17 +272,19 @@ def test_forward_sending_errors_to_relay_group(relaycrew):
     )
 
 
-@pytest.mark.timeout(TIMEOUT * 2)
+@pytest.mark.timeout(TIMEOUT)
 def test_public_invite(relaycrew, outsider):
     crew = get_user_crew(relaycrew.user)
     crew.send_text("/generate-invite")
     result = relaycrew.user._evtracker.wait_next_incoming_message()
-    assert result.filename
+    # assert result.filename
     assert result.text.startswith("https://i.delta.chat")
 
-    qr = result.filename
-    chat = outsider.qr_setup_contact(qr)
+    # qr = result.filename
+    invite = "OPENPGP4FPR:" + result.text[22::]
+    chat = outsider.qr_setup_contact(invite)
+    outsider._evtracker.wait_securejoin_joiner_progress(1000)
 
     while not chat.is_protected():
-        print(chat.get_messages()[:-1].text)
+        print(chat.get_messages()[-1].text)
         time.sleep(1)

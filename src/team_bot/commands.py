@@ -69,9 +69,7 @@ def generate_invite(account: deltachat.Account) -> str:
 
     :return: the invite link, e.g.: https://i.delta.chat
     """
-    openpgp4fpr = account.get_setup_contact_qr()
-    invite = "https://i.delta.chat/#" + openpgp4fpr[12::]
-    return invite
+    return account.get_setup_contact_qr()
 
 
 def start_chat(

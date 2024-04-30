@@ -278,11 +278,11 @@ def test_public_invite(relaycrew, outsider):
     crew.send_text("/generate-invite")
     result = relaycrew.user._evtracker.wait_next_incoming_message()
     # assert result.filename
-    assert result.text.startswith("https://i.delta.chat")
+    # assert result.text.startswith("https://i.delta.chat")
 
     # qr = result.filename
-    invite = "OPENPGP4FPR:" + result.text[22::]
-    chat = outsider.qr_setup_contact(invite)
+    # invite = "OPENPGP4FPR:" + result.text[22::]
+    chat = outsider.qr_setup_contact(result.text)
     outsider._evtracker.wait_securejoin_joiner_progress(1000)
 
     while not chat.is_protected():

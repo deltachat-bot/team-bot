@@ -11,6 +11,7 @@ from .commands import (
     crew_help,
     set_display_name,
     set_avatar,
+    generate_invite,
     start_chat,
     outside_help,
     set_outside_help,
@@ -114,6 +115,9 @@ class RelayPlugin:
                 if arguments[0] == "/set_avatar":
                     result = set_avatar(self.account, message, self.crew)
                     self.reply(message.chat, result, quote=message)
+                if arguments[0] == "/generate-invite":
+                    text = generate_invite(self.account)
+                    self.reply(message.chat, text, quote=message)
                 if arguments[0] == "/start_chat":
                     outside_chat, result = start_chat(
                         self.account,

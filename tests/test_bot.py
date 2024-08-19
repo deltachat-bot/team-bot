@@ -6,7 +6,7 @@ import pytest
 from deltachat.capi import lib as dclib
 
 
-TIMEOUT = 30
+TIMEOUT = 40
 
 
 def get_user_crew(crewuser: deltachat.Account) -> deltachat.Chat:

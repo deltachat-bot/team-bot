@@ -49,9 +49,13 @@ def test_not_relay_groups(relaycrew, outsider, lp):
     user_to_bot = user.create_chat(user_botcontact)
     user_to_bot.send_text("test message to bot")
     # somehow the message doesn't trigger DC_EVENT_INCOMING_MSG
-    bot_message_from_user = bot.get_chats()[-3].get_messages()[-1]  # bot._evtracker.wait_next_incoming_message()
+    bot_message_from_user = bot.get_chats()[-3].get_messages()[
+        -1
+    ]  # bot._evtracker.wait_next_incoming_message()
     while bot_message_from_user.text != "test message to bot":
-        bot_message_from_user = bot.get_chats()[-3].get_messages()[-1]  # bot._evtracker.wait_next_incoming_message()
+        bot_message_from_user = bot.get_chats()[-3].get_messages()[
+            -1
+        ]  # bot._evtracker.wait_next_incoming_message()
         time.sleep(1)
     assert not bot.relayplugin.is_relay_group(bot_message_from_user.chat)
 

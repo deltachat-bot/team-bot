@@ -6,9 +6,7 @@ from pyinfra import host
 from pyinfra.facts.systemd import SystemdStatus
 
 
-def deploy_team_bot(
-    unix_user: str, bot_email: str, bot_passwd: str, dbdir: str = None
-):
+def deploy_team_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str = None):
     """Deploy TeamsBot to a UNIX user, with specified credentials
 
     :param unix_user: the existing UNIX user of the bot

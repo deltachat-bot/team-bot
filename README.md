@@ -103,7 +103,6 @@ run:
 ```
 python3 -m venv venv
 . venv/bin/activate
-pip install pytest tox black pytest-xdist pytest-timeout
-pip install -e .
+pip install -e .[dev]
 tox
 ```

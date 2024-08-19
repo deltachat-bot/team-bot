@@ -64,6 +64,7 @@ def test_not_relay_groups(relaycrew, outsider, lp):
             -1
         ]  # bot._evtracker.wait_next_incoming_message()
         time.sleep(1)
+        print(bot_message_from_user.text)
     assert bot_message_from_user.text == text
     assert not bot.relayplugin.is_relay_group(bot_message_from_user.chat)
 

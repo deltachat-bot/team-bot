@@ -6,7 +6,7 @@ import pytest
 from deltachat.capi import lib as dclib
 
 
-TIMEOUT = 40
+TIMEOUT = 20
 
 
 def get_user_crew(crewuser: deltachat.Account) -> deltachat.Chat:
@@ -27,42 +27,53 @@ def test_not_relay_groups(relaycrew, outsider, lp):
     bot = relaycrew.bot
     user = relaycrew.user
 
-    lp.sec("bot <-> outsider 1:1 chat")
+    text = "outsider -> bot 1:1 chat"
+    lp.sec(text)
     outsider_botcontact = outsider.create_contact(bot.get_config("addr"))
     outsider_outside_chat = outsider.create_chat(outsider_botcontact)
-    outsider_outside_chat.send_text("test 1:1 message to bot")
-
+    outsider_outside_chat.send_text(text)
+    lp.sec("receiving message from outsider in 1:1 chat")
     bot_message_from_outsider = bot._evtracker.wait_next_incoming_message()
     bot_outside_chat = bot_message_from_outsider.chat
+    assert bot_message_from_outsider.text == text
     assert not bot.relayplugin.is_relay_group(bot_outside_chat)
 
-    lp.sec("bot <-> outsider group chat")
+    text = "outsider -> bot group chat"
+    lp.sec(text)
     outsider_bot_group = outsider.create_group_chat(
         "test with outsider", contacts=[outsider_botcontact]
     )
-    outsider_bot_group.send_text("test message to outsider group")
+    outsider_bot_group.send_text(text)
+    lp.sec("receiving message from outsider in group chat")
     bot_message_from_outsider = bot._evtracker.wait_next_incoming_message()
+    assert bot_message_from_outsider.text == text
     assert not bot.relayplugin.is_relay_group(bot_message_from_outsider.chat)
 
-    lp.sec("bot <-> user 1:1 chat")
+    text = "user -> bot 1:1 chat"
+    lp.sec(text)
     user_botcontact = user.create_contact(bot.get_config("addr"))
     user_to_bot = user.create_chat(user_botcontact)
-    user_to_bot.send_text("test message to bot")
+    user_to_bot.send_text(text)
+    lp.sec("receiving message from user in 1:1 chat")
     # somehow the message doesn't trigger DC_EVENT_INCOMING_MSG
     bot_message_from_user = bot.get_chats()[-3].get_messages()[
         -1
     ]  # bot._evtracker.wait_next_incoming_message()
-    while bot_message_from_user.text != "test message to bot":
+    while bot_message_from_user.text != text:
         bot_message_from_user = bot.get_chats()[-3].get_messages()[
             -1
         ]  # bot._evtracker.wait_next_incoming_message()
         time.sleep(1)
+    assert bot_message_from_user.text == text
     assert not bot.relayplugin.is_relay_group(bot_message_from_user.chat)
 
-    lp.sec("bot <-> user group chat")
+    text = "user -> bot group chat"
+    lp.sec(text)
     user_group = user.create_group_chat("test with user", contacts=[user_botcontact])
-    user_group.send_text("testing message to user group")
+    user_group.send_text(text)
+    lp.sec("receiving message from user in group chat")
     bot_message_from_user = bot._evtracker.wait_next_incoming_message()
+    assert bot_message_from_user.text == text
     assert not bot.relayplugin.is_relay_group(bot_message_from_user.chat)
 
 

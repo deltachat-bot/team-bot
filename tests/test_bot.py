@@ -27,6 +27,12 @@ def test_not_relay_groups(relaycrew, outsider, lp):
     bot = relaycrew.bot
     user = relaycrew.user
 
+    def find_msg(ac, text):
+        for chat in ac.get_chats():
+            for msg in chat.get_messages():
+                if msg.text == text:
+                    return msg
+
     text = "outsider -> bot 1:1 chat"
     lp.sec(text)
     outsider_botcontact = outsider.create_contact(bot.get_config("addr"))
@@ -37,6 +43,14 @@ def test_not_relay_groups(relaycrew, outsider, lp):
     bot_outside_chat = bot_message_from_outsider.chat
     assert bot_message_from_outsider.text == text
     assert not bot.relayplugin.is_relay_group(bot_outside_chat)
+
+    lp.sec("leave relay group with user")
+    relayed_msg = find_msg(user, text)
+    if not relayed_msg:
+        relayed_msg = user._evtracker.wait_next_incoming_message()
+    relayed_msg.chat.remove_contact(user.get_config("addr"))
+    leave_msg = bot._evtracker.wait_next_incoming_message()
+    assert bot.relayplugin.is_relay_group(leave_msg.chat)
 
     text = "outsider -> bot group chat"
     lp.sec(text)
@@ -58,12 +72,6 @@ def test_not_relay_groups(relaycrew, outsider, lp):
 
     # somehow the message doesn't trigger DC_EVENT_INCOMING_MSG
     # bot._evtracker.wait_next_incoming_message()
-    def find_msg(ac, text):
-        for chat in ac.get_chats():
-            for msg in chat.get_messages():
-                if msg.text == text:
-                    return msg
-
     bot_message_from_user = find_msg(bot, text)
     while not bot_message_from_user:
         bot_message_from_user = find_msg(bot, text)

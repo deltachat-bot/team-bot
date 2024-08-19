@@ -6,7 +6,7 @@ import pytest
 from deltachat.capi import lib as dclib
 
 
-TIMEOUT = 60
+TIMEOUT = 30
 
 
 def get_user_crew(crewuser: deltachat.Account) -> deltachat.Chat:
@@ -55,6 +55,7 @@ def test_not_relay_groups(relaycrew, outsider, lp):
     user_to_bot = user.create_chat(user_botcontact)
     user_to_bot.send_text(text)
     lp.sec("receiving message from user in 1:1 chat")
+
     # somehow the message doesn't trigger DC_EVENT_INCOMING_MSG
     # bot._evtracker.wait_next_incoming_message()
     def find_msg(ac, text):
@@ -62,6 +63,7 @@ def test_not_relay_groups(relaycrew, outsider, lp):
             for msg in chat.get_messages():
                 if msg.text == text:
                     return msg
+
     bot_message_from_user = find_msg(bot, text)
     while not bot_message_from_user:
         bot_message_from_user = find_msg(bot, text)

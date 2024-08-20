@@ -9,7 +9,7 @@ from deltachat.capi import lib as dclib
 TIMEOUT = 40
 
 
-def get_user_crew(crewuser: deltachat.Account) -> deltachat.Chat:
+def get_user_crew(crewuser: deltachat.Account, id=11) -> deltachat.Chat:
     """Get the Team chat from the team member's point of view.
 
     :param crewuser: the account object of the team member
@@ -17,7 +17,7 @@ def get_user_crew(crewuser: deltachat.Account) -> deltachat.Chat:
     """
     for chat in crewuser.get_chats():
         print(chat.id, chat.get_name())
-    user_crew = crewuser.get_chat_by_id(11)
+    user_crew = crewuser.get_chat_by_id(id)
     assert user_crew.get_name().startswith("Team")
     return user_crew
 
@@ -156,12 +156,42 @@ def test_relay_group_forwarding(relaycrew, outsider):
         for msg in chat.get_messages():
             assert "This is the relay group for" not in msg.text
 
+
+@pytest.mark.timeout(TIMEOUT)
+def test_offboarding(team_bot, relaycrew, outsider, team_user):
+    # outsider sends message, creates relay group
+    outsider_botcontact = outsider.create_contact(team_bot.get_config("addr"))
+    outsider_outside_chat = outsider.create_chat(outsider_botcontact)
+    outsider_outside_chat.send_text("test 1:1 message to bot")
+
+    # get relay group
+    user_relay_group = team_user._evtracker.wait_next_incoming_message().chat
+    bot_relay_group = team_bot.get_chats()[-1]
+
+    # outsider gets added to crew
+    qr = relaycrew.get_join_qr()
+    outsider.qr_join_chat(qr)
+    outsider._evtracker.wait_securejoin_joiner_progress(1000)
+
+    # user kicks outsider from crew
+    user_crew = get_user_crew(team_user)
+    user_crew.remove_contact(team_user.create_contact(outsider))
+    team_bot._evtracker.wait_next_incoming_message()
+
     # user leaves crew
-    get_user_crew(user).remove_contact(user)
+    user_crew.remove_contact(team_user)
     # make sure they are also offboarded from relay group
-    user._evtracker.wait_next_incoming_message()
+    team_bot._evtracker.wait_next_incoming_message()
+    team_user._evtracker.wait_next_incoming_message()
+    team_user._evtracker.wait_next_incoming_message()
+    team_user._evtracker.wait_next_incoming_message()
     for contact in bot_relay_group.get_contacts():
-        assert user.get_config("addr") != contact.addr
+        assert team_user.get_config("addr") != contact.addr
+
+    # make sure there is no message in relay group that outsider was kicked
+    for msg in user_relay_group.get_messages():
+        print(msg.text)
+        assert outsider.get_config("addr") + " removed by " not in msg.text
 
 
 @pytest.mark.timeout(TIMEOUT)

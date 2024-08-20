@@ -270,4 +270,6 @@ class RelayPlugin:
 
     def offboard(self, ex_admin):
         for mapping in self.kvstore.get("relays"):
-            self.account.get_chat_by_id(mapping[1]).remove_contact(ex_admin)
+            relay_group = self.account.get_chat_by_id(mapping[1])
+            if ex_admin in relay_group.get_contacts():
+                relay_group.remove_contact(ex_admin)

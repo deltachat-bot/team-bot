@@ -156,6 +156,7 @@ class RelayPlugin:
                 else:
                     logging.debug("Ignoring message, just the crew chatting")
             else:
+                self.mark_last_messages_read(message.chat)
                 logging.debug("Ignoring message, just the crew chatting")
 
         else:
@@ -277,3 +278,12 @@ class RelayPlugin:
             relay_group = self.account.get_chat_by_id(mapping[1])
             if ex_admin in relay_group.get_contacts():
                 relay_group.remove_contact(ex_admin)
+
+    def mark_last_messages_read(self, relay_group: deltachat.Chat) -> None:
+        """Mark the last incoming messages as read for a corresponding relay group.
+
+        :param relay_group: the relay group in which the messages which should marked read were forwarded.
+        """
+        outside_chat = self.get_outside_chat(relay_group.id)
+        for msg in outside_chat.get_messages():
+            msg.mark_seen()

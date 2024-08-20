@@ -103,6 +103,7 @@ def test_relay_group_forwarding(relaycrew, outsider):
     message_from_outsider = bot._evtracker.wait_next_incoming_message()
     bot_outside_chat = message_from_outsider.chat
     assert not bot.relayplugin.is_relay_group(bot_outside_chat)
+    assert message_from_outsider.is_in_fresh()
 
     # get relay group
     user_forwarded_message_from_outsider = user._evtracker.wait_next_incoming_message()
@@ -132,6 +133,7 @@ def test_relay_group_forwarding(relaycrew, outsider):
         user._dc_context, user_relay_group.id, user_direct_reply._dc_msg
     )
     assert sent_id == user_direct_reply.id
+    assert message_from_outsider.is_in_seen()
 
     # check that direct reply was forwarded to outsider
     outsider_direct_reply = outsider._evtracker.wait_next_incoming_message()

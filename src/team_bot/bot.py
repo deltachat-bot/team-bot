@@ -268,7 +268,11 @@ class RelayPlugin:
                 return self.account.get_chat_by_id(mapping[1])
         return None
 
-    def offboard(self, ex_admin):
+    def offboard(self, ex_admin: deltachat.Contact) -> None:
+        """Remove a former crew member from all relay groups they are part of.
+
+        :param ex_admin: a contact which just got removed from the crew.
+        """
         for mapping in self.kvstore.get("relays"):
             relay_group = self.account.get_chat_by_id(mapping[1])
             if ex_admin in relay_group.get_contacts():

@@ -156,6 +156,13 @@ def test_relay_group_forwarding(relaycrew, outsider):
         for msg in chat.get_messages():
             assert "This is the relay group for" not in msg.text
 
+    # user leaves crew
+    get_user_crew(user).remove_contact(user)
+    # make sure they are also offboarded from relay group
+    user._evtracker.wait_next_incoming_message()
+    for contact in bot_relay_group.get_contacts():
+        assert user.get_config("addr") != contact.addr
+
 
 @pytest.mark.timeout(TIMEOUT)
 def test_default_outside_help(relaycrew, outsider):

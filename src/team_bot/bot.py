@@ -67,6 +67,11 @@ class RelayPlugin:
             relay_group.send_text(f"Sending Message failed:\n\n{error}")
 
     @account_hookimpl
+    def ac_member_removed(self, chat, contact, actor, message):
+        if chat == self.crew:
+            self.offboard(contact)
+
+    @account_hookimpl
     def ac_incoming_message(self, message: deltachat.Message):
         """This method is called on every incoming message and decides what to do with it."""
 
@@ -262,3 +267,7 @@ class RelayPlugin:
             if mapping[0] == outside_id:
                 return self.account.get_chat_by_id(mapping[1])
         return None
+
+    def offboard(self, ex_admin):
+        for mapping in self.kvstore.get("relays"):
+            self.account.get_chat_by_id(mapping[1]).remove_contact(ex_admin)

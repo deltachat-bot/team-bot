@@ -25,18 +25,11 @@ def deploy_team_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str 
     )
 
     if clone_repo.changed:
-        server.script(
-            name="Setup virtual environment for team-bot",
-            src=importlib.resources.files(__package__)
-            / "pyinfra_assets"
-            / "setup-venv.sh",
-            _su_user=unix_user,
-            _use_su_login=True,
-        )
-
         server.shell(
             name="Compile team-bot",
             commands=[
+                "python3 -m venv ~/.local/lib/team-bot.venv",
+                ". ~/.local/lib/team-bot.venv/bin/activate && pip install -U pip wheel",
                 f". .local/lib/team-bot.venv/bin/activate && cd /home/{unix_user}/team-bot && pip install ."
             ],
             _su_user=unix_user,

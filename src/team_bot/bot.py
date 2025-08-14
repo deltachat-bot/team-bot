@@ -151,8 +151,12 @@ class RelayPlugin:
                     message.quote.get_sender_contact()
                     == self.account.get_self_contact()
                 ):
-                    logging.debug("Forwarding message to outsider")
-                    self.forward_to_outside(message)
+                    if not message.quote.text.startswith("This is the relay group for"):
+
+                        logging.debug("Forwarding message to outsider")
+                        self.forward_to_outside(message)
+                    else:
+                        logging.debug("Ignoring reply to the group creation message")
                 else:
                     logging.debug("Ignoring message, just the crew chatting")
             else:

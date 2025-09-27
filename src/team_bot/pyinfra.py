@@ -15,6 +15,10 @@ def deploy_team_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str 
     :param dbdir: the directory where the bot's data will be stored. default: ~/.config/team-bot/email@example.org
     """
 
+    git.config(
+        key="autoStash",
+        value="true",
+    )
     clone_repo = git.repo(
         name="Pull the team-bot repository",
         src="https://github.com/deltachat-bot/team-bot",

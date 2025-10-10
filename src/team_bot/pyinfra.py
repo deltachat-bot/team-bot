@@ -16,7 +16,7 @@ def deploy_team_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str 
     """
 
     git.config(
-        key="autoStash",
+        key="rebase.autoStash",
         value="true",
     )
     clone_repo = git.repo(

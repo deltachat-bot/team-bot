@@ -1,13 +1,15 @@
 import logging
-import pathlib
+from pathlib import Path
 import sys
+import os
 
 import pickledb
 import click
 import qrcode
-import deltachat
+from deltachat_rpc_client import run_bot_cli, Client
 
-from .bot import SetupPlugin, RelayPlugin
+from .bot import hooks
+from .setup import setup_hooks
 
 
 def set_log_level(verbose: int, db: str):
@@ -28,9 +30,24 @@ def set_log_level(verbose: int, db: str):
 @click.command(
     cls=click.Group, context_settings={"help_option_names": ["-h", "--help"]}
 )
+@click.option(
+    "--dbdir",
+    type=str,
+    default="team_bot_data",
+    help="path to the bot's database",
+    envvar="TEAMS_DBDIR",
+)
 @click.pass_context
-def team_bot(ctx):
+def team_bot(ctx, dbdir: str):
     """This bot connects your team to the outside and makes it addressable."""
+    pickle_path = Path(dbdir).joinpath("pickle.db")
+    kvstore = pickledb.load(pickle_path, True)
+
+    if not kvstore.get("crew_id"):
+
+
+
+    run_bot_cli(hooks)
 
 
 @team_bot.command()
@@ -137,7 +154,7 @@ def init(ctx, email: str, password: str, dbdir: str, verbose: int):
 @click.pass_context
 def run(ctx, dbdir: str, verbose: int):
     """Run the bot, so it relays messages from and to the outside"""
-    dbdir = pathlib.Path(dbdir)
+    dbdir = Path(dbdir)
     delta_db = str(dbdir.joinpath("delta.sqlite"))
     pickle_path = dbdir.joinpath("pickle.db")
     kvstore = pickledb.load(pickle_path, True)
@@ -171,7 +188,7 @@ def run(ctx, dbdir: str, verbose: int):
 @click.pass_context
 def verify_crypto(ctx, dbdir: str, verbose: int):
     """Show a QR code to verify the encryption with the bot"""
-    dbdir = pathlib.Path(dbdir)
+    dbdir = Path(dbdir)
     delta_db = str(dbdir.joinpath("delta.sqlite"))
 
     set_log_level(verbose, delta_db)

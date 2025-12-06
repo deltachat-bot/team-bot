@@ -3,7 +3,7 @@ import os
 import pickledb
 import requests
 
-import deltachat
+import deltachat_rpc_client
 import pytest
 from _pytest.pytester import LineMatcher
 

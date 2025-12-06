@@ -1,11 +1,11 @@
 import logging
+import pathlib
 import time
 from threading import Event
+import os
 
 import pickledb
-import deltachat
-from deltachat import account_hookimpl
-from deltachat.capi import lib as dclib
+from deltachat_rpc_client import events, EventType
 
 from .commands import (
     crew_help,
@@ -18,6 +18,43 @@ from .commands import (
 )
 
 
+hooks = events.HookCollection()
+
+DB_DIR = pathlib.Path(".")
+
+
+@hooks.on(events.RawEvent)
+def catch_events(event):
+    """This is called on every raw event and can be used for any kind of event handling.
+    Unfortunately deltachat-rpc-client doesn't offer high-level events for MSG_DELIVERED or SECUREJOIN_INVITER_PROGRESS
+    yet, so this needs to be done with raw events.
+
+    :param event: the event object
+    """
+    if os.getenv("DEBUG") == "true":
+        print(event)
+    if event.kind == EventType.SECUREJOIN_INVITER_PROGRESS:
+        pickle_path = DB_DIR.joinpath("pickle.db")
+        kvstore = pickledb.load(pickle_path, True)
+        if event.progress == 1000:
+            if event.chat.id == kvstore.get("crew_id"):
+                event.chat.send_text(crew_help())
+            else:
+                """Send outside help if set."""
+    if event.kind == EventType.IMAP_CONNECTED:
+        pickle_path = DB_DIR.joinpath("pickle.db")
+        kvstore = pickledb.load(pickle_path, True)
+
+        if outside_help(kvstore) == False:
+            DEFAULT_HELP_MSG = f"I forward messages to the {event.account.get_config('displayname')} team."
+            event.account.set_config("selfstatus", DEFAULT_HELP_MSG)
+
+        print(
+            "The bot can be reached via this invite link: "
+            + event.account.get_qr_code()
+        )
+
+
 class SetupPlugin:
     def __init__(self, crew_id):
         self.member_added = Event()
@@ -25,14 +62,17 @@ class SetupPlugin:
         self.message_sent = Event()
         self.outgoing_messages = 0
 
-    @account_hookimpl
-    def ac_member_added(self, chat: deltachat.Chat, contact, actor, message):
-        if chat.id == self.crew_id and chat.num_contacts() == 2:
-            self.member_added.set()
+    @hooks.on(events.MemberListChanged)
+    def ac_member_added(self, event):
+        snapshot = event.message_snapshot
+        if event.member_added:
+            if snapshot.chat.id == self.crew_id and len(snapshot.chat.get_contacts) == 1:
+                self.member_added.set()
 
-    @account_hookimpl
-    def ac_message_delivered(self, message: deltachat.Message):
-        if not message.is_system_message():
+    @hooks.on(events.MessageDelivered)
+    def ac_message_delivered(self, event):
+        snapshot = event.message_snapshot
+        if not message.is_system_message():  # XXX
             self.outgoing_messages -= 1
             if self.outgoing_messages < 1:
                 self.message_sent.set()

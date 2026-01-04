@@ -6,13 +6,14 @@ from pyinfra import host
 from pyinfra.facts.systemd import SystemdStatus
 
 
-def deploy_team_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str = None):
+def deploy_team_bot(unix_user: str, bot_email: str = None, bot_passwd: str = None, dbdir: str = None, user_invite: str = None):
     """Deploy TeamsBot to a UNIX user, with specified credentials
 
     :param unix_user: the existing UNIX user of the bot
-    :param bot_email: the email address for the bot account
-    :param bot_passwd: the password for the bot's email account
+    :param bot_email: the email address for the bot account. If left out, it will be a random nine.testrun.org address
+    :param bot_passwd: the password for the bot's email account. Only needed if bot_email is specified
     :param dbdir: the directory where the bot's data will be stored. default: ~/.config/team-bot/email@example.org
+    :param user_invite: the invite link of the first crew member
     """
 
     git.config(
@@ -44,9 +45,13 @@ def deploy_team_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str 
         dbdir = f"/home/{unix_user}/.config/team_bot/{bot_email}/"
     secrets = [
         f"TEAMS_DBDIR={dbdir}",
-        f"TEAMS_INIT_EMAIL={bot_email}",
-        f"TEAMS_INIT_PASSWORD={bot_passwd}",
     ]
+    if bot_email:
+        secrets.append(f"TEAMS_INIT_EMAIL={bot_email}")
+    if bot_passwd:
+        secrets.append(f"TEAMS_INIT_PASSWORD={bot_passwd}")
+    if user_invite:
+        secrets.append(f"TEAMS_USER_INVITE={user_invite}")
     env = "\n".join(secrets)
     files.put(
         name="upload secrets",
@@ -88,23 +93,12 @@ def deploy_team_bot(unix_user: str, bot_email: str, bot_passwd: str, dbdir: str 
         commands=[f"loginctl enable-linger {unix_user}"],
     )
 
-    services = host.get_fact(
-        SystemdStatus,
+    systemd.service(
+        name=f"{unix_user}: restart team-bot systemd service",
+        service="team-bot.service",
+        running=True,
+        restarted=True,
         user_mode=True,
-        user_name=unix_user,
         _su_user=unix_user,
         _use_su_login=True,
     )
-    try:
-        if services["team-bot.service"]:
-            systemd.service(
-                name=f"{unix_user}: restart team-bot systemd service",
-                service="team-bot.service",
-                running=True,
-                restarted=True,
-                user_mode=True,
-                _su_user=unix_user,
-                _use_su_login=True,
-            )
-    except KeyError:
-        pass

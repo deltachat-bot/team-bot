@@ -55,38 +55,23 @@ Just import it into your [deploy.py file](https://docs.pyinfra.com/en/2.x/gettin
 from team_bot.pyinfra import deploy_team_bot
 
 deploy_team_bot(
-    unix_user='root',                   # an existing UNIX user (doesn't need root or sudo privileges)
-    bot_email='helpdesk@example.org',   # the email address your team wants to use
-    bot_passwd='p4ssw0rd',              # the password to the email account
+    unix_user='root',                        # an existing UNIX user (doesn't need root or sudo privileges)
+    bot_email='helpdesk@example.org',        # the email address your team wants to use
+    bot_passwd='p4ssw0rd',                   # the password to the email account
+    user_invite='https://i.delta.chat/#/...  # the invite link of the first crew member
 )
 ```
 
-After you deployed it,
-you need to do two steps manually:
+If you didn't specify a `user_invite`,
+you can initialize the bot
+by scanning its QR code
+or clicking its invite link
+in the logs:
 
-First,
-to initialize the bot,
-create the crew,
-and join the crew,
-login to the user with ssh
-and run:
-
-```
-export $(cat ~/.env | xargs) && ~/.local/lib/team-bot.venv/bin/team-bot init
-```
-
-Then,
-to start the bot
-and keep it running in the background,
-run:
-
-```
-systemctl --user enable --now team-bot
-```
-
-You can view the log output
+You can view the logs
 with `journalctl --user -fu team-bot`
-to confirm that it works.
+to view the QR code
+and to check if something goes wrong.
 
 ## Development Environment
 
@@ -94,8 +79,8 @@ To get started with developing,
 run:
 
 ```
-python3 -m venv venv
-. venv/bin/activate
-pip install -e .[dev]
-tox
+uv venv
+. .venv/bin/activate
+uv pip install -e .[dev]
+uv run tox
 ```

@@ -1,10 +1,20 @@
 import logging
 
+from deltachat_rpc_client import Chat, Message
 from deltachat_rpc_client._utils import AttrDict
 
-from .util import reply, get_outside_chat, get_relay_group, get_crew_id_from_account, get_relay_groups, set_relay_groups
+from .util import get_outside_chat, get_relay_group, get_crew_id_from_account, get_relay_groups, set_relay_groups
 
 log = logging.getLogger("root")
+
+
+def reply(chat: Chat, text: str, attachment: str = None, quote: Message = None):
+    """Reply to a chat, with a text, optionally including an attachment or quoting a message."""
+    chat.send_message(
+        text=text,
+        file=attachment,
+        quoted_msg=quote,
+    )
 
 
 def forward_to_outside(msg: AttrDict):
@@ -35,7 +45,7 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
     if not relay_group:
         group_name = "[%s] %s" % (
             account.get_config("addr").split("@")[0],
-            msg.chat.get_full_snapshot().name
+            msg.chat.get_full_snapshot().name,
         )
         log.info(f"Creating new relay group: {group_name}")
         relay_group = account.create_group(group_name)
@@ -53,10 +63,7 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
         if started_by_crew:
             explanation = f"We sent a message to {recipients}.\n\nThis was our first message:"
         else:
-            explanation = (
-                f"This is a chat with {recipients}; "
-                "Only *replies* will be visible to the outside."
-            )
+            explanation = f"This is a chat with {recipients}; Only *replies* will be visible to the outside."
         relay_group.send_text(explanation)
         relay_mappings = get_relay_groups(account)
         relay_mappings.append(tuple([msg.chat.id, relay_group.id]))

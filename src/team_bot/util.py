@@ -5,7 +5,6 @@ from typing import Optional
 from deltachat_rpc_client import Account, Chat, Message
 from deltachat_rpc_client._utils import AttrDict
 
-
 log = logging.getLogger("root")
 
 
@@ -62,15 +61,6 @@ def get_outside_chat(relay_group: Chat) -> Chat:
     for mapping in get_relay_groups(relay_group.account):
         if mapping[1] == relay_group.id:
             return relay_group.account.get_chat_by_id(mapping[0])
-
-
-def reply(chat: Chat, text: str, attachment: str = None, quote: Message = None):
-    """Reply to a chat, with a text, optionally including an attachment or quoting a message."""
-    chat.send_message(
-        text=text,
-        file=attachment,
-        quoted_msg=quote,
-    )
 
 
 def mark_seen(relay_group: Chat):

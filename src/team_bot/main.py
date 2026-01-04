@@ -14,17 +14,17 @@ from .setup import setuphooks
 from .relay import relayhooks
 from .util import has_crew
 
-
 ALPHANUMERIC = string.ascii_lowercase + string.digits
 
+
 def run_bot(
-        log: logging.Logger,
-        accounts_dir: Optional[str] = None,
-        until: Optional[Callable[[AttrDict], bool]] = None,
-        email: Optional[str] = None,
-        password: Optional[str] = None,
-        hooks: Optional[Iterable[Tuple[Callable, Union[type, "EventFilter"]]]] = None,
-        **kwargs,
+    log: logging.Logger,
+    accounts_dir: Optional[str] = None,
+    until: Optional[Callable[[AttrDict], bool]] = None,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    hooks: Optional[Iterable[Tuple[Callable, Union[type, "EventFilter"]]]] = None,
+    **kwargs,
 ) -> str:
     """Run the bot until a condition returns true.
 

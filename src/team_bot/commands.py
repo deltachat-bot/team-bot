@@ -43,9 +43,7 @@ def set_display_name(account: Account, display_name: str) -> str:
     return "Display name changed to " + display_name
 
 
-def set_avatar(
-    account: Account, message: AttrDict, crew: Chat
-) -> str:
+def set_avatar(account: Account, message: AttrDict, crew: Chat) -> str:
     """Set the avatar of the bot.
 
     :return: a success/failure message
@@ -80,7 +78,7 @@ def start_chat(
             encrypted = ""
             break
     contact_ids = [contact.id for contact in contacts]
-    log.info(f"Sending {encrypted} message to {", ".join(contact_ids),} with subject {title}: {text}")
+    log.info(f"Sending {encrypted} message to {(', '.join(contact_ids),)} with subject {title}: {text}")
 
     if not encrypted:
         chat = Chat(ac, ac._rpc.create_group_chat_unencrypted(ac.id, title))

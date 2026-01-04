@@ -4,8 +4,8 @@ import json
 from deltachat_rpc_client import events, EventType
 from deltachat_rpc_client._utils import AttrDict
 
-from .util import get_crew_id_from_account, is_relay_group, get_relay_group, get_outside_chat, reply, mark_seen
-from .forwarding import forward_to_outside, forward_to_relay_group
+from .util import get_crew_id_from_account, is_relay_group, get_relay_group, get_outside_chat, mark_seen
+from .forwarding import forward_to_outside, forward_to_relay_group, reply
 from .commands import crew_help, set_display_name, set_avatar, start_chat, set_outside_help, outside_help
 
 log = logging.getLogger("root")
@@ -35,7 +35,6 @@ def incoming_message(event):
     account = msg.chat.account
     crew_id = get_crew_id_from_account(account)
 
-    import pdb; pdb.set_trace()
     if msg.is_info:
         handle_info_msg(msg, crew_id)
         return
@@ -79,9 +78,9 @@ def handle_msg_in_crew_chat(msg: AttrDict):
                 help_message = msg.text.split("/set_outside_help ")[1]
             except IndexError:
                 set_outside_help(account, "")
-                return reply(msg.chat,"Removed help message for outsiders", quote=msg.message)
+                return reply(msg.chat, "Removed help message for outsiders", quote=msg.message)
             set_outside_help(account, help_message)
-            reply(msg.chat,f"Set help message for outsiders to {help_message}", quote=msg.message)
+            reply(msg.chat, f"Set help message for outsiders to {help_message}", quote=msg.message)
     else:
         log.debug("Ignoring message, just the crew chatting")
 
@@ -109,16 +108,12 @@ def handle_msg_in_outside_chat(msg: AttrDict):
 
     # if the message came to an outside chat
     if msg.text.startswith("/help"):
-        log.info(
-            "Outsider %s asked for help", msg.sender.get_snapshot().name_and_addr
-        )
+        log.info("Outsider %s asked for help", msg.sender.get_snapshot().name_and_addr)
         help_message = outside_help(account)
         if help_message is None:
             help_message = f"I forward messages to the {account.get_config('displayname')} team."
         if help_message == "":
-            log.debug(
-                "Help message empty, forwarding message to relay group"
-            )
+            log.debug("Help message empty, forwarding message to relay group")
         else:
             log.debug(
                 "Sending help text to %s: %s",

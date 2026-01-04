@@ -1,3 +1,4 @@
+import qrcode
 import os
 
 from deltachat_rpc_client import events, EventType
@@ -31,7 +32,12 @@ def catch_events(event):
                 try:
                     assert event.account.crew_invite
                 except AttributeError:
-                    print(f"JOIN THE TEAM WITH THIS INVITE LINK: {get_crew_invite(event.account)}")
+                    invite_link = get_crew_invite(event.account)
+                    qr = qrcode.QRCode()
+                    qr.add_data(invite_link)
+                    print("\nPlease scan this qr code with Delta Chat to verify the bot:\n\n")
+                    qr.print_ascii(invert=True)
+                    print(f"\nOr click this invite link: {invite_link}")
 
 
     if event.kind == EventType.SECUREJOIN_INVITER_PROGRESS:

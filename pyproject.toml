@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "deltachat-rpc-client>=2.36.0",
     "deltachat-rpc-server>=2.36.0",
+    "qrcode>=8.2",
 ]
 
 [project.scripts]

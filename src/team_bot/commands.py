@@ -13,7 +13,7 @@ def crew_help() -> str:
     :return: the help message
     """
     help_text = """
-Start a chat:\t/start_chat alice@example.org,bob@example.org Chat_Title Hello friends!
+Start a chat:\t/new_message alice@example.org,bob@example.org Chat_Title Hello friends!
 Change the bot's name:\t/set_name Name
 Change the bot's avatar:\t/set_avatar <attach image>
 Generate invite link:\t\t/generate_invite

@@ -4,7 +4,7 @@ import os
 
 from deltachat_rpc_client import events, EventType
 
-from .util import get_crew_id, get_crew_invite
+from .util import has_crew, get_crew_invite
 
 log = logging.getLogger("root")
 setuphooks = events.HookCollection()
@@ -21,7 +21,7 @@ def catch_events(event):
     log.debug(event)
 
     if event.kind == EventType.IMAP_CONNECTED:
-        crew_id = get_crew_id(event)
+        crew_id = has_crew(event)
 
         event.account.set_config("bcc_self", "1")
 

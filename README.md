@@ -32,20 +32,13 @@ with an email address
 you want to use as a team:
 
 ```
-team-bot init --email helpdesk@example.org --password p455w0rD
+team-bot --email helpdesk@example.org --password p455w0rD
 ```
 
-This command will show a QR code;
-scan it with Delta Chat
+At the beginning it will print an invite link;
+open it with Delta Chat
 to become part of the "team",
 the verified group which manages the Team Bot.
-
-Now to run it,
-simply execute:
-
-```
-team-bot run -v
-```
 
 The bot only works as long as this command is running.
 Read more about [running bots on

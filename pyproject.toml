@@ -8,3 +8,9 @@ dependencies = [
     "deltachat-rpc-client>=2.36.0",
     "deltachat-rpc-server>=2.36.0",
 ]
+
+[project.scripts]
+team-bot = "team_bot.main:main"
+
+[tool.uv]
+package = true

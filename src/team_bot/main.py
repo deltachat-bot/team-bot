@@ -12,7 +12,7 @@ from deltachat_rpc_client._utils import AttrDict
 
 from .setup import setuphooks
 from .relay import relayhooks
-from .util import get_crew_id
+from .util import has_crew
 
 
 ALPHANUMERIC = string.ascii_lowercase + string.digits
@@ -20,7 +20,7 @@ ALPHANUMERIC = string.ascii_lowercase + string.digits
 def run_bot(
         log: logging.Logger,
         accounts_dir: Optional[str] = None,
-        until: Optional[Callable[[AttrDict], int]] = None,
+        until: Optional[Callable[[AttrDict], bool]] = None,
         email: Optional[str] = None,
         password: Optional[str] = None,
         hooks: Optional[Iterable[Tuple[Callable, Union[type, "EventFilter"]]]] = None,
@@ -85,7 +85,7 @@ def main():
 
     accounts_dir = run_bot(
         log,
-        until=get_crew_id,
+        until=has_crew,
         accounts_dir=args.dbdir,
         email=args.email,
         password=args.password,

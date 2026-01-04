@@ -1,7 +1,9 @@
 import logging
 
-from deltachat_rpc_client import Account, Chat
+from deltachat_rpc_client import Account, Chat, Contact
 from deltachat_rpc_client._utils import AttrDict
+
+from .util import get_relay_groups
 
 
 log = logging.getLogger("root")
@@ -96,3 +98,16 @@ def start_chat(
     view_type = command.view_type
     log.debug(f"Message has view_type {view_type} with the attachment {attachment}")
     chat.send_message(text=text, viewtype=view_type, file=attachment)
+
+
+def offboard(msg: AttrDict, ex_admin: Contact) -> None:
+    """Remove a former crew member from all relay groups they are part of.
+
+    :param msg: the AttrDict of the message causing the member removal.
+    :param ex_admin: a contact which just got removed from the crew.
+    """
+    account = msg.chat.account
+    for mapping in get_relay_groups(account):
+        relay_group = account.get_chat_by_id(mapping[1])
+        if ex_admin in relay_group.get_contacts():
+            relay_group.remove_contact(ex_admin)

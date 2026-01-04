@@ -21,6 +21,30 @@ def catch_events(event):
     """
     log.debug(event)
 
+    if event.kind == EventType.MSG_DELIVERED:
+        delivered_msg = event.account.get_message_by_id(event.msg_id).get_snapshot()
+        relay_group = get_relay_group(delivered_msg.chat)
+        if relay_group:
+            for message in relay_group.get_messages():
+                msg = message.get_snapshot()
+                if msg.quote:
+                    if msg.text == delivered_msg.text and msg.file == delivered_msg.file:
+                        log.debug("Confirming successful delivery to outside chat.")
+                        msg.message.send_reaction("✅")
+
+    elif event.kind == EventType.MSG_FAILED:
+        failed_msg = event.account.get_message_by_id(event.msg_id).get_snapshot()
+        relay_group = get_relay_group(failed_msg.chat)
+        if relay_group:
+            for message in relay_group.get_messages():
+                msg = message.get_snapshot()
+                if msg.quote:
+                    if msg.text == failed_msg.text and msg.file == failed_msg.file:
+                        log.debug("Reporting delivery error to outside chat.")
+                        delivery_error = "Delivery failed:\n\n" + msg.message.get_info()
+                        msg.message.send_reaction("❌")
+                        relay_group.send_message(text=delivery_error, quoted_msg=msg.message)
+
 
 @relayhooks.on(events.MemberListChanged)
 def member_added_or_removed(event):

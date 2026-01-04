@@ -75,8 +75,8 @@ def handle_msg_in_crew_chat(msg: AttrDict):
         if arguments[0] == "/new_message":
             outside_chat, result = start_chat(account, msg)
             if "success" in result:
-                for msg in outside_chat.get_messages():
-                    forward_to_relay_group(msg, started_by_crew=True)
+                for message in outside_chat.get_messages():
+                    forward_to_relay_group(message.get_snapshot(), started_by_crew=True)
             reply(msg.chat, result, quote=msg.message)
         if arguments[0] == "/set_outside_help":
             try:

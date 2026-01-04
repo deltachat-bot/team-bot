@@ -73,14 +73,23 @@ def start_chat(
     words = arguments[3:]
     text = " ".join(words)
 
-    contacts = [ac.get_contact_by_addr(rec) for rec in recipients]
+    contacts = []
+    contact_ids = []
+    failed_contacts = []
     encrypted = "encrypted"
-    for contact in contacts:
-        if not contact.get_snapshot().is_key_contact():
-            encrypted = ""
-            break
-    contact_ids = [contact.id for contact in contacts]
-    log.info(f"Sending {encrypted} message to {(', '.join(contact_ids),)} with subject {title}: {text}")
+    for rec in recipients:
+        contact = ac.get_contact_by_addr(rec)
+        if contact:
+            contacts.append(contact)
+            contact_ids.append(str(contact.id))
+            if not contact.get_snapshot().is_key_contact:
+                encrypted = ""
+        else:
+            log.error(f"Couldn't find valid contact for {rec}")
+            failed_contacts.append(rec)
+    if failed_contacts:
+        return None, "failed to create contacts for " + ", ".join(rec)
+    log.info(f"Sending {encrypted} message to {', '.join(contact_ids)} with subject {title}: {text}")
 
     if not encrypted:
         chat = Chat(ac, ac._rpc.create_group_chat_unencrypted(ac.id, title))
@@ -98,6 +107,7 @@ def start_chat(
     view_type = command.view_type
     log.debug(f"Message has view_type {view_type} with the attachment {attachment}")
     chat.send_message(text=text, viewtype=view_type, file=attachment)
+    return chat, "success"
 
 
 def offboard(msg: AttrDict, ex_admin: Contact) -> None:

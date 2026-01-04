@@ -1,3 +1,4 @@
+import json
 import logging
 import qrcode
 import os
@@ -44,6 +45,11 @@ def catch_events(event):
                     print("\nPlease scan this qr code with Delta Chat to verify the bot:\n\n")
                     qr.print_ascii(invert=True)
                     print(f"\nOr click this invite link: {invite_link}")
+
+        if not event.account.get_config("ui.relay_groups"):
+            empty_list_json = json.dumps([])
+            event.account.set_config("ui.relay_groups", empty_list_json)
+            log.info("Initialized empty list of relay groups")
 
     if event.kind == EventType.SECUREJOIN_INVITER_PROGRESS or event.kind == EventType.SECUREJOIN_JOINER_PROGRESS:
         if event.progress == 1000:

@@ -1,12 +1,11 @@
 import logging
-import json
 
 from deltachat_rpc_client import events, EventType
 from deltachat_rpc_client._utils import AttrDict
 
 from .util import get_crew_id_from_account, is_relay_group, get_relay_group, get_outside_chat, mark_seen
 from .forwarding import forward_to_outside, forward_to_relay_group, reply
-from .commands import crew_help, set_display_name, set_avatar, start_chat, set_outside_help, outside_help
+from .commands import crew_help, set_display_name, set_avatar, start_chat, set_outside_help, outside_help, offboard
 
 log = logging.getLogger("root")
 relayhooks = events.HookCollection()
@@ -21,11 +20,17 @@ def catch_events(event):
     :param event: the event object
     """
     log.debug(event)
-    if event.kind == EventType.IMAP_CONNECTED:
-        if not event.account.get_config("ui.relay_groups"):
-            empty_list_json = json.dumps([])
-            event.account.set_config("ui.relay_groups", empty_list_json)
-            log.info("Initialized empty list of relay groups")
+
+
+@relayhooks.on(events.MemberListChanged)
+def member_added_or_removed(event):
+    msg = event.message_snapshot
+    account = msg.chat.account
+    if msg.chat_id == get_crew_id_from_account(account):
+        change = "added" if event.member_added else "removed"
+        log.info("crew member %s was %s" % (event.member, change))
+        if not event.member_added:
+            offboard(msg, event.member)
 
 
 @relayhooks.on(events.NewMessage)

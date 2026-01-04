@@ -1,9 +1,10 @@
 import logging
 
-import deltachat
-import pickledb
-from deltachat.capi import lib as dclib
-from deltachat.message import _view_type_mapping
+from deltachat_rpc_client import Account, Chat
+from deltachat_rpc_client._utils import AttrDict
+
+
+log = logging.getLogger("root")
 
 
 def crew_help() -> str:
@@ -15,32 +16,25 @@ def crew_help() -> str:
 Start a chat:\t/start_chat alice@example.org,bob@example.org Chat_Title Hello friends!
 Change the bot's name:\t/set_name Name
 Change the bot's avatar:\t/set_avatar <attach image>
-Generate invite link:\t\t/generate-invite
+Generate invite link:\t\t/generate_invite
 Show this help text:\t\t/help
 Change the help message for outsiders:\t/set_outside_help Hello outsider
     """
     return help_text
 
 
-def outside_help(kvstore: pickledb.PickleDB) -> str:
-    """Get the help message for outsiders
-
-    :param kvstore: the pickledDB key-value-store
-    :return: the help message
-    """
-    return kvstore.get("outside_help_message")
+def outside_help(account: Account) -> str:
+    """Get the help message for outsiders"""
+    return account.get_config("ui.outside_help_message")
 
 
-def set_outside_help(kvstore: pickledb.PickleDB, help_message: str):
-    """Set the help message for outsiders
-
-    :param kvstore: the pickeDB key-value-store
-    """
-    logging.debug("Setting outside_help_message to %s", help_message)
-    kvstore.set("outside_help_message", help_message)
+def set_outside_help(account: Account, help_message: str):
+    """Set the help message for outsiders"""
+    logging.info("Setting outside_help_message to %s", help_message)
+    account.set_config("ui.outside_help_message", help_message)
 
 
-def set_display_name(account: deltachat.Account, display_name: str) -> str:
+def set_display_name(account: Account, display_name: str) -> str:
     """Set the display name of the bot.
 
     :return: a success message
@@ -50,32 +44,23 @@ def set_display_name(account: deltachat.Account, display_name: str) -> str:
 
 
 def set_avatar(
-    account: deltachat.Account, message: deltachat.Message, crew: deltachat.Chat
+    account: Account, message: AttrDict, crew: Chat
 ) -> str:
     """Set the avatar of the bot.
 
     :return: a success/failure message
     """
-    if not message.is_image():
+    if not message.view_type == "Image":
         return "Please attach an image so the avatar can be changed."
-    logging.debug("Found file with MIMEtype %s", message.filemime)
-    account.set_avatar(message.filename)
-    crew.set_profile_image(message.filename)
+    account.set_avatar(message.file)
+    crew.set_image(message.file)
     return "Avatar changed to this image."
 
 
-def generate_invite(account: deltachat.Account) -> str:
-    """Return a https://i.delta.chat invite link for chatting with the bot.
-
-    :return: the invite link, e.g.: https://i.delta.chat
-    """
-    return account.get_setup_contact_qr()
-
-
 def start_chat(
-    ac: deltachat.Account,
-    command: deltachat.Message,
-) -> (deltachat.Chat, str):
+    ac: Account,
+    command: AttrDict,
+) -> (Chat, str):
     """Start a chat with one or more outsiders.
 
     :param ac: the account object of the bot
@@ -85,36 +70,31 @@ def start_chat(
     arguments = command.text.split(" ")
     recipients = arguments[1].split(",")
     title = arguments[2].replace("_", " ")
-    words = []
-    for i in range(3, len(arguments)):
-        words.append(arguments[i])
+    words = arguments[3:]
     text = " ".join(words)
-    attachment = command.filename if command.filename else ""
-    view_type = get_message_view_type(command)
 
-    logging.info(
-        "Sending %s message to %s with subject '%s': %s",
-        view_type,
-        ", ".join(recipients),
-        title,
-        text,
-    )
-    chat = ac.create_group_chat(title, recipients)
-    msg = deltachat.Message.new_empty(ac, view_type)
-    msg.set_text(text)
-    if attachment:
-        logging.info("Message has a %s attachment with path %s", view_type, attachment)
-        msg.set_file(attachment)
-    sent_id = dclib.dc_send_msg(ac._dc_context, chat.id, msg._dc_msg)
-    if sent_id == msg.id:
-        return chat, "Chat successfully created."
+    contacts = [ac.get_contact_by_addr(rec) for rec in recipients]
+    encrypted = "encrypted"
+    for contact in contacts:
+        if not contact.get_snapshot().is_key_contact():
+            encrypted = ""
+            break
+    contact_ids = [contact.id for contact in contacts]
+    log.info(f"Sending {encrypted} message to {", ".join(contact_ids),} with subject {title}: {text}")
+
+    if not encrypted:
+        chat = Chat(ac, ac._rpc.create_group_chat_unencrypted(ac.id, title))
+        for contact in contacts:
+            chat.add_contact(contact)
+    elif len(contacts) == 1:
+        chat = contacts[0].create_chat()
+        text = f"{title} {text}"
     else:
-        logging.error("Can't send message. sent_id: %s, msg.id: %s", sent_id, msg.id)
-        return chat, "Something went wrong...\n\n" + crew_help()
+        chat = ac.create_group(title)
+        for contact in contacts:
+            chat.add_contact(contact)
 
-
-def get_message_view_type(message: deltachat.Message) -> str:
-    """Get the view_type of a Message."""
-    for view_name, view_code in _view_type_mapping.items():
-        if view_code == message._view_type:
-            return view_name
+    attachment = command.file if command.file else None
+    view_type = command.view_type
+    log.debug(f"Message has view_type {view_type} with the attachment {attachment}")
+    chat.send_message(text=text, viewtype=view_type, file=attachment)

@@ -1,20 +1,43 @@
 [project]
 name = "team-bot"
-version = "0.1.0"
-description = "Add your description here"
+version = "2.26.0"
+description = "This bot connects your team to the outside and makes it addressable."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "deltachat-rpc-client>=2.36.0",
     "deltachat-rpc-server>=2.36.0",
     "qrcode>=8.2",
 ]
 
+[project.urls]
+Repository = "https://github.com/deltachat-bot/team-bot/"
+Issues = "https://github.com/deltachat-bot/team-bot/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ['src']
+
 [project.scripts]
 team-bot = "team_bot.main:main"
+
+[project.optional-dependencies]
+all = ["pytest", "pytest-env", "pytest-timeout", "pytest-xdist", "tox", "ruff", "pyinfra"]
+dev = ["pytest", "pytest-env", "pytest-timeout", "pytest-xdist", "tox", "ruff",]
+deploy = ["pyinfra"]
 
 [tool.uv]
 package = true
 
 [tool.ruff]
+lint.select = [
+  "F", # Pyflakes
+  "I", # isort
+
+  "PLC", # Pylint Convention
+  "PLE", # Pylint Error
+  "PLW", # Pylint Warning
+]
 line-length = 120

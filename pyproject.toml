@@ -15,3 +15,6 @@ team-bot = "team_bot.main:main"
 
 [tool.uv]
 package = true
+
+[tool.ruff]
+line-length = 120

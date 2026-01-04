@@ -45,7 +45,6 @@ def catch_events(event):
                     qr.print_ascii(invert=True)
                     print(f"\nOr click this invite link: {invite_link}")
 
-
     if event.kind == EventType.SECUREJOIN_INVITER_PROGRESS or event.kind == EventType.SECUREJOIN_JOINER_PROGRESS:
         if event.progress == 1000:
             bot_addr = event.account.get_config("addr")

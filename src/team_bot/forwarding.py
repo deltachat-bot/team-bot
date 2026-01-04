@@ -70,7 +70,7 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
         set_relay_groups(account, relay_mappings)
 
     if msg.quote:
-        quoted_msg = account.get_message_by_id(msg.quote.message_id).get_snapshot()
+        quoted_msg = msg.quote.message_id
     else:
         quoted_msg = None
     relay_group.send_message(

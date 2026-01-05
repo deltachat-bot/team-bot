@@ -1,12 +1,34 @@
+import json
 import logging
+import pathlib
+import pickledb
 
 from deltachat_rpc_client import Account, Chat, Contact
 from deltachat_rpc_client._utils import AttrDict
 
-from .util import get_relay_groups
+from .util import get_relay_groups, set_relay_groups
 
 
 log = logging.getLogger("root")
+
+
+def migrate_from_pickle(account: Account, accounts_dir: str):
+    """Migrate the data from an old pickle DB to the new account's config sqlite table."""
+    dbdir = pathlib.Path(accounts_dir)
+    pickle_path = dbdir.joinpath("pickle.db")
+    kvstore = pickledb.load(pickle_path, True)
+
+    crew_id = kvstore.get("crew_id")
+    log.warning(f"Migrating crew_id: {crew_id}")
+    account.set_config("ui.crew_id", str(crew_id))
+
+    relays = kvstore.get("relays")
+    log.warning(f"Migrating relays: {json.dumps(relays)}")
+    set_relay_groups(account, relays)
+
+    outside_help_message = kvstore.get("outside_help_message")
+    log.warning(f"Migrating outside_help_message: {outside_help_message}")
+    set_outside_help(account, outside_help_message)
 
 
 def crew_help() -> str:

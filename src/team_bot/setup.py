@@ -22,11 +22,9 @@ def catch_events(event):
     log.debug(event)
 
     if event.kind == EventType.IMAP_CONNECTED:
-        crew_id = has_crew(event)
-
         event.account.set_config("bcc_self", "1")
 
-        if not crew_id:
+        if not has_crew(event):
             user_invite = os.getenv("TEAMS_USER_INVITE")
             if user_invite:
                 try:

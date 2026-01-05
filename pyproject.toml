@@ -1,12 +1,13 @@
 [project]
 name = "team-bot"
-version = "2.26.0"
+version = "2.36.0"
 description = "This bot connects your team to the outside and makes it addressable."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "deltachat-rpc-client>=2.36.0",
-    "deltachat-rpc-server>=2.36.0",
+    "deltachat-rpc-client==2.36.0",
+    "deltachat-rpc-server==2.36.0",
+    "pickledb==0.9",
     "qrcode>=8.2",
 ]
 

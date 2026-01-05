@@ -12,7 +12,8 @@ from deltachat_rpc_client._utils import AttrDict
 
 from .setup import setuphooks
 from .relay import relayhooks
-from .util import has_crew
+from .util import has_crew, get_crew_id_from_account
+from .commands import migrate_from_pickle
 
 ALPHANUMERIC = string.ascii_lowercase + string.digits
 
@@ -37,7 +38,7 @@ def run_bot(
     :return the accounts directory
     """
     if not accounts_dir:
-        accounts_dir = os.getcwd() + "/.config/team-bot/" + email
+        accounts_dir = os.getcwd() + "/.config/teams_bot/" + email
         log.warning(f"No --dbdir specified, using the default directory: {accounts_dir}")
 
     with Rpc(accounts_dir=accounts_dir, **kwargs) as rpc:
@@ -48,6 +49,11 @@ def run_bot(
 
         client = Bot(account, hooks)
         client.logger.debug("Running deltachat core %s", core_version)
+        if not get_crew_id_from_account(account):
+            if os.path.exists(os.path.join(accounts_dir, "pickle.db")):
+                log.warning(f"Migrating data from {accounts_dir}/pickle.db to {accounts_dir}/delta.sqlite's config table:")
+                migrate_from_pickle(account, accounts_dir)
+
         if not client.is_configured():
             if not email:
                 email = "".join(random.choices(ALPHANUMERIC, k=9)) + "@nine.testrun.org"

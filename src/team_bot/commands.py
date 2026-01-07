@@ -4,6 +4,7 @@ import os
 import pickledb
 
 from deltachat_rpc_client import Account, Chat, Contact, Rpc, DeltaChat, Message
+from deltachat_rpc_client.rpc import JsonRpcError
 from deltachat_rpc_client._utils import AttrDict
 
 from .util import get_relay_groups, set_relay_groups
@@ -122,22 +123,28 @@ def start_chat(
     contacts = []
     contact_ids = []
     failed_contacts = []
-    encrypted = "encrypted"
+    encryption = "encrypted"
     for rec in recipients:
         contact = ac.get_contact_by_addr(rec)
-        if contact:
-            contacts.append(contact)
-            contact_ids.append(str(contact.id))
-            if not contact.get_snapshot().is_key_contact:
-                encrypted = ""
-        else:
-            log.error(f"Couldn't find valid contact for {rec}")
-            failed_contacts.append(rec)
+        if not contact:
+            log.error(f"Couldn't find valid PGP contact for {rec}")
+            if ac.get_config("is_chatmail") == "1":
+                failed_contacts.append(f"{rec}: no encryption available, use /add_contact first")
+                continue
+            try:
+                contact = ac.create_contact(rec)
+            except JsonRpcError as e:
+                failed_contacts.append(f"{rec}: {e.args[0].get("message")}")
+                continue
+        contacts.append(contact)
+        contact_ids.append(str(contact.id))
+        if not contact.get_snapshot().is_key_contact:
+            encryption = "unencrypted"
     if failed_contacts:
         return None, "failed to create contacts for " + ", ".join(failed_contacts)
-    log.info(f"Sending {encrypted} message to {', '.join(contact_ids)} with subject {title}: {text}")
+    log.info(f"Sending {encryption} message to {', '.join(contact_ids)} with subject {title}: {text}")
 
-    if not encrypted:
+    if encryption == "unencrypted":
         chat = Chat(ac, ac._rpc.create_group_chat_unencrypted(ac.id, title))
         for contact in contacts:
             chat.add_contact(contact)

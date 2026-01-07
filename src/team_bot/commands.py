@@ -134,7 +134,7 @@ def start_chat(
             log.error(f"Couldn't find valid contact for {rec}")
             failed_contacts.append(rec)
     if failed_contacts:
-        return None, "failed to create contacts for " + ", ".join(rec)
+        return None, "failed to create contacts for " + ", ".join(failed_contacts)
     log.info(f"Sending {encrypted} message to {', '.join(contact_ids)} with subject {title}: {text}")
 
     if not encrypted:

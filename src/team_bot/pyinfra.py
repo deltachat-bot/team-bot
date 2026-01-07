@@ -2,11 +2,11 @@ from io import StringIO
 import importlib.resources
 
 from pyinfra.operations import git, server, files, systemd
-from pyinfra import host
-from pyinfra.facts.systemd import SystemdStatus
 
 
-def deploy_team_bot(unix_user: str, bot_email: str = None, bot_passwd: str = None, dbdir: str = None, user_invite: str = None):
+def deploy_team_bot(
+    unix_user: str, bot_email: str = None, bot_passwd: str = None, dbdir: str = None, user_invite: str = None
+):
     """Deploy TeamsBot to a UNIX user, with specified credentials
 
     :param unix_user: the existing UNIX user of the bot
@@ -62,18 +62,17 @@ def deploy_team_bot(unix_user: str, bot_email: str = None, bot_passwd: str = Non
     )
 
     files.directory(
-        name="chown database directory",
-        path=dbdir,
+        name="chown team_bot directory",
+        path=f"/home/{unix_user}/.config/team_bot",
         mode="0700",
         recursive=True,
         user=unix_user,
+        group=unix_user,
     )
 
     files.template(
         name="upload team-bot systemd unit",
-        src=importlib.resources.files(__package__)
-        / "pyinfra_assets"
-        / "team-bot.service.j2",
+        src=importlib.resources.files(__package__) / "pyinfra_assets" / "team-bot.service.j2",
         dest=f"/home/{unix_user}/.config/systemd/user/team-bot.service",
         user=unix_user,
         unix_user=unix_user,

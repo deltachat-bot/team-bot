@@ -70,6 +70,7 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
             outside_members = outside_chat.get_contacts()
             outside_members.remove(account.self_contact)
             recipients = ", ".join([member.get_snapshot().display_name for member in outside_members])
+            recipients = " and ".join(recipients.rsplit(", ", 1))
         else:
             recipients = outside_chat.get_full_snapshot().contacts[0].name_and_addr
         if started_by_crew:

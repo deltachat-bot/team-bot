@@ -153,7 +153,7 @@ def start_chat(
     view_type = command.view_type
     log.debug(f"Message has view_type {view_type} with the attachment {attachment}")
     message = chat.send_message(text=text, viewtype=view_type, file=attachment)
-    return message, "Chat successfully created."
+    return message, "Message successfully sent."
 
 
 def offboard(msg: AttrDict, ex_admin: Contact) -> None:

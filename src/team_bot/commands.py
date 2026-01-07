@@ -3,7 +3,7 @@ import logging
 import os
 import pickledb
 
-from deltachat_rpc_client import Account, Chat, Contact, Rpc, DeltaChat
+from deltachat_rpc_client import Account, Chat, Contact, Rpc, DeltaChat, Message
 from deltachat_rpc_client._utils import AttrDict
 
 from .util import get_relay_groups, set_relay_groups
@@ -106,12 +106,12 @@ def set_avatar(account: Account, message: AttrDict, crew: Chat) -> str:
 def start_chat(
     ac: Account,
     command: AttrDict,
-) -> (Chat, str):
+) -> (Message, str):
     """Start a chat with one or more outsiders.
 
     :param ac: the account object of the bot
     :param command: the message with the command
-    :return: the outside chat and a success/failure message
+    :return: the sent message and a success/failure message
     """
     arguments = command.text.split(" ")
     recipients = arguments[1].split(",")
@@ -152,8 +152,8 @@ def start_chat(
     attachment = command.file if command.file else None
     view_type = command.view_type
     log.debug(f"Message has view_type {view_type} with the attachment {attachment}")
-    chat.send_message(text=text, viewtype=view_type, file=attachment)
-    return chat, "success"
+    message = chat.send_message(text=text, viewtype=view_type, file=attachment)
+    return message, "Chat successfully created."
 
 
 def offboard(msg: AttrDict, ex_admin: Contact) -> None:

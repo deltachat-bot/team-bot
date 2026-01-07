@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 
 import pytest
 from deltachat_rpc_client.events import EventType
@@ -8,7 +7,6 @@ from deltachat_rpc_client._utils import AttrDict
 
 from team_bot.relay import relayhooks
 from team_bot.setup import setuphooks
-from team_bot.util import get_crew_id_from_account
 
 
 @pytest.fixture
@@ -19,11 +17,24 @@ def bot(acfactory, log):
     bot.account.set_config("displayname", "Bot from TEST team")
     bot.add_hooks(setuphooks)
     bot.logger = logging.getLogger("root")
-    bot.account.bring_online()
-    event = AttrDict()
-    event["kind"] = EventType.IMAP_CONNECTED
-    event["account"] = bot.account
-    bot._on_event(event)
+
+    def process_events(bot, until: EventType) -> AttrDict:
+        while True:
+            event = bot.account.wait_for_event()
+            if event.get("msg"):
+                print(event.get("msg"))
+            event["kind"] = EventType(event.kind)
+            event["account"] = bot.account
+            bot._on_event(event)
+            if event.kind == EventType.INCOMING_MSG:
+                bot._process_messages()
+                return bot.account.get_message_by_id(event.msg_id).get_snapshot()
+            if until == event.kind:
+                return event
+
+    bot.process_events = process_events
+    bot.account.start_io()
+    bot.process_events(bot, EventType.IMAP_INBOX_IDLE)
     return bot
 
 
@@ -40,14 +51,9 @@ def crew(crew_member, bot, log, caplog):
     #caplog.set_level(logging.DEBUG, logger="root")
     log.step("Crew member joins crew")
     bot_invite = bot.account.get_qr_code()
-    bot_contact = crew_member.secure_join(bot_invite)
+    crew_member.secure_join(bot_invite)
 
-    event = bot.account.wait_for_event(event_type=EventType.SECUREJOIN_INVITER_PROGRESS)
-    event["kind"] = EventType.SECUREJOIN_INVITER_PROGRESS
-    event["account"] = bot.account
-    bot._on_event(event)
-    while not get_crew_id_from_account(bot.account):
-        time.sleep(0.1)
+    bot.process_events(bot, EventType.SECUREJOIN_INVITER_PROGRESS)
 
     log.step("Bot changes hooks")
     for hook, event in setuphooks:

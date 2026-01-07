@@ -147,6 +147,8 @@ def start_chat(
     if encryption == "unencrypted":
         chat = Chat(ac, ac._rpc.create_group_chat_unencrypted(ac.id, title))
         for contact in contacts:
+            if contact.get_encryption_info() != "No encryption":
+                contact = ac.create_contact(contact.get_snapshot().address)
             chat.add_contact(contact)
     elif len(contacts) == 1:
         chat = contacts[0].create_chat()

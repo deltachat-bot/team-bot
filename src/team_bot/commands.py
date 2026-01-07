@@ -1,9 +1,9 @@
 import json
 import logging
-import pathlib
+import os
 import pickledb
 
-from deltachat_rpc_client import Account, Chat, Contact
+from deltachat_rpc_client import Account, Chat, Contact, Rpc, DeltaChat
 from deltachat_rpc_client._utils import AttrDict
 
 from .util import get_relay_groups, set_relay_groups
@@ -12,23 +12,47 @@ from .util import get_relay_groups, set_relay_groups
 log = logging.getLogger("root")
 
 
-def migrate_from_pickle(account: Account, accounts_dir: str):
+def migrate_from_cffi(accounts_dir: str, **kwargs):
     """Migrate the data from an old pickle DB to the new account's config sqlite table."""
-    dbdir = pathlib.Path(accounts_dir)
-    pickle_path = dbdir.joinpath("pickle.db")
+    migration_dir = os.path.normpath(accounts_dir) + ".migrating"
+    log.warning(f"Storing debug in {migration_dir} intermittently...")
+
+    with Rpc(accounts_dir=migration_dir, **kwargs) as rpc:
+        deltachat = DeltaChat(rpc)
+        deltachat.add_account()
+
+        old_db_files = [f.name for f in os.scandir(accounts_dir) if "delta.sqlite" in f.name]
+        db_subdir = [f.path for f in os.scandir(migration_dir) if f.is_dir()][0]
+
+        for file in old_db_files:
+            new_filename = file.replace("delta.sqlite", "dc.db")
+            os.rename(os.path.join(accounts_dir, file), os.path.join(db_subdir, new_filename))
+
+    pickle_path = os.path.join(accounts_dir, "pickle.db")
     kvstore = pickledb.load(pickle_path, True)
+    log.warning(f"Migrating data from {pickle_path} to {db_subdir}/dc.db's config table:")
+    with Rpc(accounts_dir=migration_dir, **kwargs) as rpc:
+        deltachat = DeltaChat(rpc)
+        accounts = deltachat.get_all_accounts()
+        account = accounts[0] if accounts else deltachat.add_account()
 
-    crew_id = kvstore.get("crew_id")
-    log.warning(f"Migrating crew_id: {crew_id}")
-    account.set_config("ui.crew_id", str(crew_id))
+        crew_id = kvstore.get("crew_id")
+        log.warning(f"Migrating crew_id: {crew_id}")
+        account.set_config("ui.crew_id", str(crew_id))
 
-    relays = kvstore.get("relays")
-    log.warning(f"Migrating relays: {json.dumps(relays)}")
-    set_relay_groups(account, relays)
+        relays = kvstore.get("relays")
+        log.warning(f"Migrating relays: {json.dumps(relays)}")
+        set_relay_groups(account, relays)
 
-    outside_help_message = kvstore.get("outside_help_message")
-    log.warning(f"Migrating outside_help_message: {outside_help_message}")
-    set_outside_help(account, outside_help_message)
+        outside_help_message = kvstore.get("outside_help_message")
+        if isinstance(outside_help_message, str):
+            log.warning(f"Migrating outside_help_message: {outside_help_message}")
+            set_outside_help(account, outside_help_message)
+
+    log.warning(f"Data migrated, removing {pickle_path}...")
+    os.remove(pickle_path)
+    os.rename(migration_dir, accounts_dir)
+    log.warning("Migration to new data format successful.")
 
 
 def crew_help() -> str:

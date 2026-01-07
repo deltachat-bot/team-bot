@@ -2,6 +2,7 @@ import os.path
 import time
 
 import pytest
+from deltachat_rpc_client import EventType
 
 from team_bot.util import is_relay_group
 
@@ -34,28 +35,25 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
     outsider_botcontact = outsider_outside_chat.get_contacts()[0]
     outsider_outside_chat.send_text(text)
     log.step("receiving message from outsider in 1:1 chat")
-    bot_message_from_outsider = bot.account.wait_for_incoming_msg().get_snapshot()
+    bot_message_from_outsider = bot.process_events(bot, EventType.INCOMING_MSG)
     log.step("reveiced message from outsider in 1:1 chat")
     bot_outside_chat = bot_message_from_outsider.chat
     assert bot_message_from_outsider.text == text
+    assert bot_outside_chat
     assert not is_relay_group(bot_outside_chat)
 
     log.step("leave relay group with crew member")
     relayed_msg = crew_member.wait_for_incoming_msg().get_snapshot()
     relayed_msg.chat.remove_contact(crew_member.self_contact)
     log.step("bot receives leave message")
-    leave_msg = find_msg(bot.account, text)
-    while not leave_msg:
-        leave_msg = find_msg(bot.account, text)
-        time.sleep(1)
-    bot._process_messages()
-    assert is_relay_group(leave_msg.chat)
+    leave_event = bot.process_events(bot, EventType.CHAT_MODIFIED)
+    bot_relay_group = bot.account.get_chat_by_id(leave_event.chat_id)
+    assert is_relay_group(bot_relay_group)
 
     text = "outsider -> bot group chat"
     log.step(text)
-    outsider_bot_group = outsider.create_group_chat(
-        "test with outsider", contacts=[outsider_botcontact]
-    )
+    outsider_bot_group = outsider.create_group("test with outsider")
+    outsider_bot_group.add_contact(outsider_botcontact)
     outsider_bot_group.send_text(text)
     log.step("receiving message from outsider in group chat")
     bot_message_from_outsider = bot.account.wait_for_incoming_msg().get_snapshot()
@@ -64,24 +62,20 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
 
     text = "user -> bot 1:1 chat"
     log.step(text)
-    user_to_bot = join_chat(crew_member, bot_invite)
-    user_to_bot.account.send_text(text)
+    user_botcontact = crew_member.create_contact(bot.account)
+    user_to_bot = user_botcontact.create_chat()
+    assert user_to_bot.get_full_snapshot().chat_type == "Single"
+    user_to_bot.send_text(text)
     log.step("receiving message from user in 1:1 chat")
 
-    # let's see, somehow the message doesn't trigger DC_EVENT_INCOMING_MSG
-    #bot.account.wait_for_incoming_msg()
-
-    bot_message_from_user = find_msg(bot, text)
-    while not bot_message_from_user:
-        bot_message_from_user = find_msg(bot, text)
-        time.sleep(1)
+    bot_message_from_user = bot.process_events(bot, EventType.INCOMING_MSG)
     assert bot_message_from_user.text == text
     assert not is_relay_group(bot_message_from_user.chat)
 
     text = "user -> bot group chat"
     log.step(text)
-    user_botcontact = bot_message_from_user.sender
-    user_group = crew_member.create_group_chat("test with user")
+    user_group = crew_member.create_group("test with user")
+    user_group.add_contact(user_botcontact)
     user_group.send_text(text)
     log.step("receiving message from user in group chat")
     bot_message_from_user = bot.account.wait_for_incoming_msg().get_snapshot()

@@ -27,7 +27,19 @@ def forward_to_outside(msg: AttrDict):
         )
         return
     try:
-        outside_chat.forward_messages([msg.message])
+        if msg.quote:
+            quoted_msg = msg.quote.message_id
+        else:
+            quoted_msg = None
+        outside_chat.send_message(
+            html=msg.html if msg.has_html else None,
+            text=msg.text,
+            viewtype=msg.view_type,
+            file=msg.file,
+            filename=msg.file_name,
+            quoted_msg=quoted_msg,
+        )
+
     except Exception as e:
         reply(msg.chat, "Sending message failed.", quote=msg.message)
         raise e

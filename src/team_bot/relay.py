@@ -73,10 +73,9 @@ def handle_msg_in_crew_chat(msg: AttrDict):
         if arguments[0] == "/generate_invite" or arguments[0] == "/generate-invite":
             reply(msg.chat, account.get_qr_code(), quote=msg.message)
         if arguments[0] == "/new_message":
-            outside_chat, result = start_chat(account, msg)
+            message, result = start_chat(account, msg)
             if "success" in result:
-                for message in outside_chat.get_messages():
-                    forward_to_relay_group(message.get_snapshot(), started_by_crew=True)
+                forward_to_relay_group(message.get_snapshot(), started_by_crew=True)
             reply(msg.chat, result, quote=msg.message)
         if arguments[0] == "/set_outside_help":
             try:

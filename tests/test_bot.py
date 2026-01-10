@@ -84,14 +84,14 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
 
 
 @pytest.mark.timeout(TIMEOUT)
-def test_relay_group_forwarding(relaycrew, bot, crew_member, outsider):
+def test_relay_group_forwarding(crew, bot, crew_member, outsider):
     # create outside chat
-    outsider_botcontact = outsider.create_contact(bot.account.get_config("addr"))
+    outsider_botcontact = outsider.create_contact(bot.account)
     outsider_outside_chat = outsider.create_chat(outsider_botcontact)
     outsider_outside_chat.send_text("test 1:1 message to bot")
 
     # get outside chat
-    message_from_outsider = bot.account.wait_for_incoming_msg().get_snapshot()
+    message_from_outsider = bot.process_events(bot, EventType.INCOMING_MSG)
     bot_outside_chat = message_from_outsider.chat
     assert not is_relay_group(bot_outside_chat)
     assert message_from_outsider.is_in_fresh()
@@ -102,52 +102,45 @@ def test_relay_group_forwarding(relaycrew, bot, crew_member, outsider):
     user_relay_group.send_text(
         "Chatter in relay group"
     )  # send normal reply, not forwarded
-    bot_chatter_in_relay_group = bot.account.wait_for_incoming_msg()
+    bot_chatter_in_relay_group = bot.account.wait_for_incoming_msg().get_snapshot()
     bot_relay_group = bot_chatter_in_relay_group.chat
 
     # check if relay group has relay group properties
-    assert bot_relay_group.get_name().startswith(
+    assert bot_relay_group.get_full_snapshot().name.startswith(
         "[%s] " % (bot.account.get_config("addr").split("@")[0],)
     )
     assert (
-        bot_relay_group.get_messages()[0].get_sender_contact() == bot.account.get_self_contact()
+        bot_relay_group.get_messages()[0].sender == bot.account.self_contact
     )
-    assert not bot_relay_group.is_protected()
-    assert relaycrew.get_contacts() == bot_relay_group.get_contacts()
+    assert crew.get_contacts() == bot_relay_group.get_contacts()
     assert is_relay_group(bot_relay_group)
 
     # send direct reply, should be forwarded
-    user_direct_reply = deltachat.Message.new_empty(crew_member, view_type="text")
-    user_direct_reply.set_text("This should be forwarded to the outsider")
-    user_direct_reply.quote = user_forwarded_message_from_outsider
-    sent_id = dclib.dc_send_msg(
-        crew_member._dc_context, user_relay_group.id, user_direct_reply._dc_msg
-    )
-    assert sent_id == user_direct_reply.id
+    user_direct_reply = user_relay_group.send_msg(text="This should be forwarded to the outsider", quote = user_forwarded_message_from_outsider)
     assert message_from_outsider.is_in_seen()
 
     # check that direct reply was forwarded to outsider
-    outsider_direct_reply = outsider.wait_for_incoming_msg()
+    outsider_direct_reply = outsider.wait_for_incoming_msg().get_snapshot()
     assert outsider_direct_reply.text == "This should be forwarded to the outsider"
     assert outsider_direct_reply.chat == outsider_outside_chat
-    assert outsider_direct_reply.get_sender_contact() == outsider_botcontact
+    assert outsider_direct_reply.sender == outsider_botcontact
 
     # check that normal reply was not forwarded to outsider
     assert bot_chatter_in_relay_group.text not in [
-        msg.text for msg in bot_outside_chat.get_messages()
+        msg.get_snapshot().text for msg in bot_outside_chat.get_messages()
     ]
 
     # reply with outsider
     outsider_outside_chat.send_text("Second message by outsider")
 
     # check that outsider's reply ends up in the same chat
-    user_second_message_from_outsider = crew_member.wait_for_incoming_msg()
+    user_second_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
     assert user_second_message_from_outsider.chat == user_relay_group
 
     # check that relay group explanation is not forwarded to outsider
     for chat in outsider.get_chatlist():
         for msg in chat.get_messages():
-            assert "This is the relay group for" not in msg.text
+            assert "This is the relay group for" not in msg.get_snapshot().text
 
 
 @pytest.mark.timeout(TIMEOUT)

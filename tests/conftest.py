@@ -2,8 +2,8 @@ import logging
 import os
 
 import pytest
-from deltachat_rpc_client.events import EventType
 from deltachat_rpc_client._utils import AttrDict
+from deltachat_rpc_client.events import EventType
 
 from team_bot.relay import relayhooks
 from team_bot.setup import setuphooks
@@ -48,7 +48,7 @@ def crew_member(log, acfactory):
 
 @pytest.fixture
 def crew(crew_member, bot, log, caplog):
-    #caplog.set_level(logging.DEBUG, logger="root")
+    # caplog.set_level(logging.DEBUG, logger="root")
     log.step("Crew member joins crew")
     bot_invite = bot.account.get_qr_code()
     crew_member.secure_join(bot_invite)

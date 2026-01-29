@@ -1,15 +1,14 @@
 import json
 import logging
 import os
-import pickledb
 import re
 
-from deltachat_rpc_client import Account, Chat, Contact, Rpc, DeltaChat, Message
-from deltachat_rpc_client.rpc import JsonRpcError
+import pickledb
+from deltachat_rpc_client import Account, Chat, Contact, DeltaChat, Message, Rpc
 from deltachat_rpc_client._utils import AttrDict
+from deltachat_rpc_client.rpc import JsonRpcError
 
 from .util import get_relay_groups, set_relay_groups
-
 
 log = logging.getLogger("root")
 

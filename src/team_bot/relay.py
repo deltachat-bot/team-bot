@@ -1,11 +1,11 @@
 import logging
 
-from deltachat_rpc_client import events, EventType
+from deltachat_rpc_client import events
 from deltachat_rpc_client._utils import AttrDict
 
-from .util import get_crew_id_from_account, is_relay_group, get_relay_group, get_outside_chat, mark_seen
+from .commands import crew_help, offboard, outside_help, set_avatar, set_display_name, set_outside_help, start_chat
 from .forwarding import forward_to_outside, forward_to_relay_group, reply
-from .commands import crew_help, set_display_name, set_avatar, start_chat, set_outside_help, outside_help, offboard
+from .util import get_crew_id_from_account, get_outside_chat, get_relay_group, is_relay_group, mark_seen
 
 log = logging.getLogger("root")
 relayhooks = events.HookCollection()

@@ -1,8 +1,8 @@
-import logging
 import json
+import logging
 from typing import Optional
 
-from deltachat_rpc_client import Account, Chat, Message
+from deltachat_rpc_client import Account, Chat
 from deltachat_rpc_client._utils import AttrDict
 
 log = logging.getLogger("root")

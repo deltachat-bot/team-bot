@@ -6,7 +6,6 @@ from deltachat_rpc_client import EventType
 
 from team_bot.util import is_relay_group
 
-
 TIMEOUT = 40
 
 
@@ -26,7 +25,6 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
         log.step("Joiner receives member_added message")
         [print(chat.get_full_snapshot().name) for chat in user.get_chatlist()]
         return user.get_chatlist()[0]
-
 
     text = "outsider -> bot 1:1 chat"
     log.step(text)
@@ -99,9 +97,7 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider):
     # get relay group
     user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg()
     user_relay_group = user_forwarded_message_from_outsider.create_chat()
-    user_relay_group.send_text(
-        "Chatter in relay group"
-    )  # send normal reply, not forwarded
+    user_relay_group.send_text("Chatter in relay group")  # send normal reply, not forwarded
     bot_chatter_in_relay_group = bot.account.wait_for_incoming_msg().get_snapshot()
     bot_relay_group = bot_chatter_in_relay_group.chat
 
@@ -109,14 +105,14 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider):
     assert bot_relay_group.get_full_snapshot().name.startswith(
         "[%s] " % (bot.account.get_config("addr").split("@")[0],)
     )
-    assert (
-        bot_relay_group.get_messages()[0].sender == bot.account.self_contact
-    )
+    assert bot_relay_group.get_messages()[0].sender == bot.account.self_contact
     assert crew.get_contacts() == bot_relay_group.get_contacts()
     assert is_relay_group(bot_relay_group)
 
     # send direct reply, should be forwarded
-    user_direct_reply = user_relay_group.send_msg(text="This should be forwarded to the outsider", quote = user_forwarded_message_from_outsider)
+    user_direct_reply = user_relay_group.send_msg(
+        text="This should be forwarded to the outsider", quote=user_forwarded_message_from_outsider
+    )
     assert message_from_outsider.is_in_seen()
 
     # check that direct reply was forwarded to outsider
@@ -126,9 +122,7 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider):
     assert outsider_direct_reply.sender == outsider_botcontact
 
     # check that normal reply was not forwarded to outsider
-    assert bot_chatter_in_relay_group.text not in [
-        msg.get_snapshot().text for msg in bot_outside_chat.get_messages()
-    ]
+    assert bot_chatter_in_relay_group.text not in [msg.get_snapshot().text for msg in bot_outside_chat.get_messages()]
 
     # reply with outsider
     outsider_outside_chat.send_text("Second message by outsider")
@@ -313,13 +307,9 @@ def test_forward_sending_errors_to_relay_group(relaycrew):
         print(relay_group.get_messages()[-1].text)
         time.sleep(0.1)
     assert (
-        "Recipient address rejected: Domain example.org does not accept mail"
-        not in relay_group.get_messages()[-1].text
+        "Recipient address rejected: Domain example.org does not accept mail" not in relay_group.get_messages()[-1].text
     )
-    assert (
-        "Invalid unencrypted mail to <alice@example.org>"
-        in relay_group.get_messages()[-1].text
-    )
+    assert "Invalid unencrypted mail to <alice@example.org>" in relay_group.get_messages()[-1].text
 
 
 @pytest.mark.timeout(TIMEOUT)

@@ -3,7 +3,7 @@ import logging
 from deltachat_rpc_client import Chat, Message
 from deltachat_rpc_client._utils import AttrDict
 
-from .util import get_outside_chat, get_relay_group, get_crew_id_from_account, get_relay_groups, set_relay_groups
+from .util import get_crew_id_from_account, get_outside_chat, get_relay_group, get_relay_groups, set_relay_groups
 
 log = logging.getLogger("root")
 

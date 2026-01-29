@@ -134,7 +134,7 @@ def start_chat(
             try:
                 contact = ac.create_contact(rec)
             except JsonRpcError as e:
-                failed_contacts.append(f"{rec}: {e.args[0].get("message")}")
+                failed_contacts.append(f"{rec}: {e.args[0].get('message')}")
                 continue
         contacts.append(contact)
         contact_ids.append(str(contact.id))

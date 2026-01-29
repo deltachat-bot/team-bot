@@ -114,11 +114,10 @@ def start_chat(
     :param command: the message with the command
     :return: the sent message and a success/failure message
     """
-    arguments = command.text.split(" ")
+    arguments = re.split(" |\n", command.text, maxsplit=3)
     recipients = arguments[1].split(",")
     title = arguments[2].replace("_", " ")
-    words = arguments[3:]
-    text = " ".join(words)
+    text = arguments[3]
 
     contacts = []
     contact_ids = []

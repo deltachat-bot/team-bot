@@ -31,8 +31,10 @@ def forward_to_outside(msg: AttrDict):
             quoted_msg = msg.quote.message_id
         else:
             quoted_msg = None
+        if not msg.has_html:
+            msg.html = None
         outside_chat.send_message(
-            html=msg.html if msg.has_html else None,
+            html=msg.html,
             text=msg.text,
             viewtype=msg.view_type,
             file=msg.file,

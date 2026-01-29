@@ -1,11 +1,11 @@
 import json
 import logging
-import qrcode
 import os
 
-from deltachat_rpc_client import events, EventType
+import qrcode
+from deltachat_rpc_client import EventType, events
 
-from .util import has_crew, get_crew_invite
+from .util import get_crew_invite, has_crew
 
 log = logging.getLogger("root")
 setuphooks = events.HookCollection()

@@ -3,17 +3,17 @@ import logging
 import os
 import random
 import string
-from typing import Optional, Iterable, Tuple, Callable, Union
 from threading import Thread
+from typing import Callable, Iterable, Optional, Tuple, Union
 
-from deltachat_rpc_client import Rpc, DeltaChat, Bot
-from deltachat_rpc_client.events import EventFilter
+from deltachat_rpc_client import Bot, DeltaChat, Rpc
 from deltachat_rpc_client._utils import AttrDict
+from deltachat_rpc_client.events import EventFilter
 
-from .setup import setuphooks
-from .relay import relayhooks
-from .util import has_crew
 from .commands import migrate_from_cffi
+from .relay import relayhooks
+from .setup import setuphooks
+from .util import has_crew
 
 ALPHANUMERIC = string.ascii_lowercase + string.digits
 

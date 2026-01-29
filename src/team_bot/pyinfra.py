@@ -1,11 +1,16 @@
-from io import StringIO
 import importlib.resources
+from io import StringIO
 
-from pyinfra.operations import git, server, files, systemd
+from pyinfra.operations import files, git, server, systemd
 
 
 def deploy_team_bot(
-    unix_user: str, bot_email: str = None, bot_passwd: str = None, dbdir: str = None, user_invite: str = None, branch="main"
+    unix_user: str,
+    bot_email: str = None,
+    bot_passwd: str = None,
+    dbdir: str = None,
+    user_invite: str = None,
+    branch="main",
 ):
     """Deploy TeamsBot to a UNIX user, with specified credentials
 

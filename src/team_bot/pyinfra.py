@@ -5,7 +5,7 @@ from pyinfra.operations import git, server, files, systemd
 
 
 def deploy_team_bot(
-    unix_user: str, bot_email: str = None, bot_passwd: str = None, dbdir: str = None, user_invite: str = None
+    unix_user: str, bot_email: str = None, bot_passwd: str = None, dbdir: str = None, user_invite: str = None, branch="main"
 ):
     """Deploy TeamsBot to a UNIX user, with specified credentials
 
@@ -14,6 +14,7 @@ def deploy_team_bot(
     :param bot_passwd: the password for the bot's email account. Only needed if bot_email is specified
     :param dbdir: the directory where the bot's data will be stored. default: ~/.config/team-bot/email@example.org
     :param user_invite: the invite link of the first crew member
+    :param branch: which branch of https://github.com/deltachat-bot/team-bot to use
     """
 
     git.config(
@@ -24,6 +25,7 @@ def deploy_team_bot(
         name="Pull the team-bot repository",
         src="https://github.com/deltachat-bot/team-bot",
         dest=f"/home/{unix_user}/team-bot",
+        branch=branch,
         rebase=True,
         _su_user=unix_user,
         _use_su_login=True,

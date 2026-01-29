@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import pickledb
+import re
 
 from deltachat_rpc_client import Account, Chat, Contact, Rpc, DeltaChat, Message
 from deltachat_rpc_client.rpc import JsonRpcError

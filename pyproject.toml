@@ -42,3 +42,38 @@ lint.select = [
   "PLW", # Pylint Warning
 ]
 line-length = 120
+
+[tool.pytest.ini_options]
+addopts = "-v -ra --strict-markers"
+log_format = "%(asctime)s %(levelname)s %(message)s"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+log_level = "INFO"
+timeout = "60"
+env = [
+    "CHATMAIL_DOMAIN=nine.testrun.org",
+    "DEBUG=true",
+]
+
+[tool.tox]
+isolated_build = true
+envlist = ["lint","py"]
+
+[tool.tox.env_run_base]
+description = "Run tests under {base_python}"
+commands = [["pytest", "-vn4", "-rsXx {posargs}"]]
+deps = [
+    "pytest",
+    "pytest-env",
+    "pytest-xdist",
+    "pytest-timeout",
+    "pdbpp",
+]
+
+[tool.tox.env.lint]
+skipdist = true
+skip_install = true
+deps = ["ruff"]
+commands = [
+    ["ruff", "format", "--quiet", "--diff", "src/", "tests/"],
+    ["ruff", "check", "src/", "tests/"]
+]

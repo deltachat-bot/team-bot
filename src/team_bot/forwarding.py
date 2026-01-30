@@ -68,13 +68,13 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
         relay_group.set_image(msg.chat.get_full_snapshot().profile_image)
 
         outside_chat = msg.chat
-        if msg.chat.get_basic_snapshot().chat_type == "Group":
+        if outside_chat.get_basic_snapshot().chat_type == "Group":
             outside_members = outside_chat.get_contacts()
             outside_members.remove(account.self_contact)
             recipients = ", ".join([member.get_snapshot().display_name for member in outside_members])
             recipients = " and ".join(recipients.rsplit(", ", 1))
         else:
-            recipients = outside_chat.get_full_snapshot().contacts[0].name_and_addr
+            recipients = outside_chat.get_contacts()[0].get_snapshot().name_and_addr
         if started_by_crew:
             explanation = f"We sent a message to {recipients}.\n\nThis was our first message:"
         else:

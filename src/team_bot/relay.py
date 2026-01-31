@@ -1,6 +1,6 @@
 import logging
 
-from deltachat_rpc_client import events
+from deltachat_rpc_client import EventType, events
 from deltachat_rpc_client._utils import AttrDict
 
 from .commands import crew_help, offboard, outside_help, set_avatar, set_display_name, set_outside_help, start_chat

@@ -277,34 +277,21 @@ def test_change_avatar(crew, bot, crew_member, log):
     assert botcontact.get_snapshot().profile_image
 
 
-@pytest.mark.timeout(TIMEOUT * 2)
-def test_forward_sending_errors_to_relay_group(crew, bot, crew_member, log):
-    log.step("Send command to /new_message")
-    crew.chat.send_text("/new_message alice@example.org This_Message_will_fail test")
+@pytest.mark.timeout(TIMEOUT)
+def test_new_message_error(crew, bot, crew_member, log):
+    log.step("Send /new_message command")
+    rec = "alice@example.org"
+    command = f"/new_message {rec} This_Message_will_fail test"
+    crew.chat.send_text(command)
 
     log.step("Let bot receive and process it")
     bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    assert command in [msg.get_snapshot().text for msg in bot.account.get_chatlist()[0].get_messages()]
 
-    log.step("Wait until outside_chat gets created")
-    while len(bot.account.get_chatlist()) < 3:
-        time.sleep(0.1)
-    out_chat = bot.account.get_chatlist()[-1]
-    outgoing_message = out_chat.get_messages()[-1]
-    print(outgoing_message)
-    bot._process_events(INDEFINITELY, until_event=EventType.MSG_FAILED)
-    assert outgoing_message.is_out_failed()
-
-    crew_member.wait_for_incoming_msg()
-    crew_member.wait_for_incoming_msg()
-    crew_member.wait_for_incoming_msg()
-    for chat in crew_member.get_chatlist():
-        if "This Message will fail" in chat.get_basic_snapshot().name:
-            error_text = chat.get_messages()[-1].get_snapshot().text
-            print(error_text)
-            assert "Recipient address rejected: Domain example.org does not accept mail" not in error_text
-            assert "Invalid unencrypted mail to <alice@example.org>" in error_text
-            return
-    pytest.fail("Failure notice not found")
+    log.step("User receives error message")
+    error_msg = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert error_msg.text == f"failed to create contacts for {rec}: no encryption available, use /add_contact first"
+    # XXX test /add_contact fails as well
 
 
 @pytest.mark.timeout(TIMEOUT)

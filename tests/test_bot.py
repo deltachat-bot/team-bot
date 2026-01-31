@@ -6,7 +6,7 @@ from deltachat_rpc_client.const import MessageState
 
 from team_bot.util import get_crew_id_from_account, get_relay_groups, is_relay_group
 
-TIMEOUT = 30
+TIMEOUT = 40
 INDEFINITELY = lambda _: False
 
 

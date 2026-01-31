@@ -3,9 +3,18 @@ import logging
 from deltachat_rpc_client import EventType, events
 from deltachat_rpc_client._utils import AttrDict
 
-from .commands import crew_help, offboard, outside_help, set_avatar, set_display_name, set_outside_help, start_chat
+from .commands import (
+    crew_help,
+    offboard,
+    outside_help,
+    set_avatar,
+    set_display_name,
+    set_outside_help,
+    start_chat,
+    add_contact,
+)
 from .forwarding import forward_to_outside, forward_to_relay_group, reply
-from .util import get_crew_id_from_account, get_outside_chat, get_relay_group, is_relay_group, mark_seen
+from .util import get_crew_id_from_account, get_outside_chat, get_relay_group, is_relay_group, mark_seen, parse_new_command_args
 
 log = logging.getLogger("root")
 relayhooks = events.HookCollection()
@@ -34,16 +43,31 @@ def catch_events(event):
 
     elif event.kind == EventType.MSG_FAILED:
         failed_msg = event.account.get_message_by_id(event.msg_id).get_snapshot()
+        log.warning(f"Sending message failed: {failed_msg.text}")
         relay_group = get_relay_group(failed_msg.chat)
         if relay_group:
-            for message in relay_group.get_messages():
+            for message in relay_group.get_messages().__reversed__():
                 msg = message.get_snapshot()
-                if msg.quote:
-                    if msg.text == failed_msg.text and msg.file == failed_msg.file:
-                        log.debug("Reporting delivery error to outside chat.")
-                        delivery_error = "Delivery failed:\n\n" + msg.message.get_info()
-                        msg.message.send_reaction("❌")
-                        relay_group.send_message(text=delivery_error, quoted_msg=msg.message)
+                if msg.text == failed_msg.text and msg.file == failed_msg.file:
+                    delivery_error = "Delivery failed:\n\n" + msg.message.get_info()
+                    relay_group.send_message(text=delivery_error, quoted_msg=msg.message)
+                    if msg.quote:
+                        log.debug("Reporting delivery error to relay group.")
+                        return msg.message.send_reaction("❌")
+                    else:
+                        log.debug("Reporting delivery error of new_message to crew chat.")
+                        crew = event.account.get_chat_by_id(get_crew_id_from_account(event.account))
+                        for crew_message in crew.get_messages().__reversed__():
+                            crew_msg = crew_message.get_snapshot()
+                            log.debug(f"Looking at crew msg: {crew_msg.text}")
+                            try:
+                                _, title, text = parse_new_command_args(crew_msg.text)
+                            except IndexError:
+                                continue
+                            if crew_msg.text.startswith("/new_message"):
+                                if failed_msg.text in text or failed_msg.text in f"{title} {text}":
+                                    log.info(f"Found failed message in crew chat: {crew_msg.text}")
+                                    return crew_msg.message.send_reaction("❌")
 
 
 @relayhooks.on(events.MemberListChanged)
@@ -101,6 +125,9 @@ def handle_msg_in_crew_chat(msg: AttrDict):
             if "success" in result:
                 forward_to_relay_group(message.get_snapshot(), started_by_crew=True)
             reply(msg.chat, result, quote=msg.message)
+        if arguments[0] == "/add_contact":
+            message = add_contact(account, msg)
+            reply(msg.chat, message, quote=msg.message)
         if arguments[0] == "/set_outside_help":
             try:
                 help_message = msg.text.split("/set_outside_help ")[1]

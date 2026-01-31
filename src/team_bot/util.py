@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import Optional
 
 from deltachat_rpc_client import Account, Chat
@@ -68,3 +69,16 @@ def mark_seen(relay_group: Chat):
     outside_chat = get_outside_chat(relay_group)
     for msg in outside_chat.get_messages():
         msg.mark_seen()
+
+
+def parse_new_command_args(command_text: str) -> ([str], str, str):
+    """Parse a /new_command message to get recipients, title, and text out of it.
+
+    :param command_text the text of the command
+    :return: a list of recipients as email addresses, a subject/group title, and the text.
+    """
+    arguments = re.split(" |\n", command_text, maxsplit=3)
+    recipients = arguments[1].split(",")
+    title = arguments[2].replace("_", " ")
+    text = arguments[3]
+    return recipients, title, text

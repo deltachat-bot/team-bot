@@ -4,6 +4,7 @@ from deltachat_rpc_client import EventType, events
 from deltachat_rpc_client._utils import AttrDict
 
 from .commands import (
+    add_contact,
     crew_help,
     offboard,
     outside_help,
@@ -11,10 +12,16 @@ from .commands import (
     set_display_name,
     set_outside_help,
     start_chat,
-    add_contact,
 )
 from .forwarding import forward_to_outside, forward_to_relay_group, reply
-from .util import get_crew_id_from_account, get_outside_chat, get_relay_group, is_relay_group, mark_seen, parse_new_command_args
+from .util import (
+    find_original_message,
+    get_crew_id_from_account,
+    get_outside_chat,
+    get_relay_group,
+    is_relay_group,
+    mark_seen,
+)
 
 log = logging.getLogger("root")
 relayhooks = events.HookCollection()
@@ -31,43 +38,23 @@ def catch_events(event):
     log.debug(event)
 
     if event.kind == EventType.MSG_DELIVERED:
-        delivered_msg = event.account.get_message_by_id(event.msg_id).get_snapshot()
-        relay_group = get_relay_group(delivered_msg.chat)
-        if relay_group:
-            for message in relay_group.get_messages():
-                msg = message.get_snapshot()
-                if msg.quote:
-                    if msg.text == delivered_msg.text and msg.file == delivered_msg.file:
-                        log.debug("Confirming successful delivery to outside chat.")
-                        msg.message.send_reaction("✅")
+        delivered_msg = event.account.get_message_by_id(event.msg_id)
+        log.warning(f"Delivered message successfully: {delivered_msg.get_snapshot().text}")
+        if get_relay_group(delivered_msg.get_snapshot().chat):
+            orig_chat, orig_message = find_original_message(delivered_msg, event.account)
+            if orig_chat:
+                log.debug(f"Notifying success in {orig_chat.get_full_snapshot().name}")
+                orig_message.send_reaction("✅")
 
     elif event.kind == EventType.MSG_FAILED:
-        failed_msg = event.account.get_message_by_id(event.msg_id).get_snapshot()
-        log.warning(f"Sending message failed: {failed_msg.text}")
-        relay_group = get_relay_group(failed_msg.chat)
-        if relay_group:
-            for message in relay_group.get_messages().__reversed__():
-                msg = message.get_snapshot()
-                if msg.text == failed_msg.text and msg.file == failed_msg.file:
-                    delivery_error = "Delivery failed:\n\n" + msg.message.get_info()
-                    relay_group.send_message(text=delivery_error, quoted_msg=msg.message)
-                    if msg.quote:
-                        log.debug("Reporting delivery error to relay group.")
-                        return msg.message.send_reaction("❌")
-                    else:
-                        log.debug("Reporting delivery error of new_message to crew chat.")
-                        crew = event.account.get_chat_by_id(get_crew_id_from_account(event.account))
-                        for crew_message in crew.get_messages().__reversed__():
-                            crew_msg = crew_message.get_snapshot()
-                            log.debug(f"Looking at crew msg: {crew_msg.text}")
-                            try:
-                                _, title, text = parse_new_command_args(crew_msg.text)
-                            except IndexError:
-                                continue
-                            if crew_msg.text.startswith("/new_message"):
-                                if failed_msg.text in text or failed_msg.text in f"{title} {text}":
-                                    log.info(f"Found failed message in crew chat: {crew_msg.text}")
-                                    return crew_msg.message.send_reaction("❌")
+        failed_msg = event.account.get_message_by_id(event.msg_id)
+        log.warning(f"Sending message failed: {failed_msg.get_snapshot().text}")
+        if get_relay_group(failed_msg.get_snapshot().chat):
+            orig_chat, orig_message = find_original_message(failed_msg, event.account)
+            if orig_chat:
+                delivery_error = "Delivery failed:\n\n" + failed_msg.get_info()
+                orig_chat.send_message(text=delivery_error, quoted_msg=orig_message)
+                orig_message.send_reaction("❌")
 
 
 @relayhooks.on(events.MemberListChanged)

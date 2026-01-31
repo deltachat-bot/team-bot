@@ -3,7 +3,7 @@ import logging
 import re
 from typing import Optional
 
-from deltachat_rpc_client import Account, Chat
+from deltachat_rpc_client import Account, Chat, Message
 from deltachat_rpc_client._utils import AttrDict
 
 log = logging.getLogger("root")
@@ -82,3 +82,41 @@ def parse_new_command_args(command_text: str) -> ([str], str, str):
     title = arguments[2].replace("_", " ")
     text = arguments[3]
     return recipients, title, text
+
+
+def find_original_message(sent_message: Message, account: Account) -> (Chat, Message):
+    """For a message the bot sent, find the original message by the crew member.
+
+    :param sent_message: the bot's message
+    :param account: the bot's account object
+    :return: the chat the original message was sent in, and the original message.
+    """
+    relay_group = get_relay_group(sent_message.get_snapshot().chat)
+    sent_msg = sent_message.get_snapshot()
+    for message in relay_group.get_messages().__reversed__():
+        msg = message.get_snapshot()
+        if msg.text == sent_msg.text and msg.file == sent_msg.file:
+            if msg.quote:
+                log.debug("Reporting delivery error to relay group.")
+                return relay_group, msg.message
+            else:
+                log.debug("Found message, but it was sent with /new_message. Let's look in the crew chat")
+                break
+
+    crew = account.get_chat_by_id(get_crew_id_from_account(account))
+    for crew_message in crew.get_messages().__reversed__():
+        crew_msg = crew_message.get_snapshot()
+        log.debug(f"Looking at crew msg: {crew_msg.text}")
+        try:
+            recipients, title, text = parse_new_command_args(crew_msg.text)
+        except IndexError:
+            continue  # not a (valid) /new_message command
+        outside_chat = get_outside_chat(relay_group)
+        outside_contacts = set(c.get_snapshot().address for c in outside_chat.get_contacts())
+        if outside_contacts != set(recipients):
+            continue
+        if crew_msg.text.startswith("/new_message"):
+            if sent_msg.text in text or sent_msg.text in f"{title} {text}":
+                return crew, crew_msg.message
+    log.debug(f"Original message not found for message: {sent_msg.text}")
+    return None, None

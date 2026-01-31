@@ -7,7 +7,7 @@ from deltachat_rpc_client import Account, Chat, DeltaChat, Message, Rpc
 from deltachat_rpc_client._utils import AttrDict
 from deltachat_rpc_client.rpc import JsonRpcError
 
-from .util import get_relay_groups, set_relay_groups, parse_new_command_args
+from .util import get_relay_groups, parse_new_command_args, set_relay_groups
 
 log = logging.getLogger("root")
 
@@ -170,7 +170,9 @@ def add_contact(account: Account, command: AttrDict) -> str:
     """
     with open(command.file, "r") as f:
         contacts = account.import_vcard(f.read())
-    return "Contact imported. You can now send a /new_message to " + ",".join([c.get_snapshot().address for c in contacts])
+    return "Contact imported. You can now send a /new_message to " + ",".join(
+        [c.get_snapshot().address for c in contacts]
+    )
 
 
 def offboard(msg: AttrDict, displayname: str) -> None:

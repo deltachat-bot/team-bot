@@ -4,10 +4,18 @@ import pytest
 from deltachat_rpc_client import EventType
 from deltachat_rpc_client.const import MessageState
 
-from team_bot.util import get_crew_id_from_account, get_relay_groups, is_relay_group
+from team_bot.util import get_crew_id_from_account, get_relay_groups, is_relay_group, parse_new_command_args
 
 TIMEOUT = 40
 INDEFINITELY = lambda _: False
+ALICE_VCARD = """BEGIN:VCARD
+VERSION:4.0
+EMAIL:alice@example.org
+FN:test
+KEY:data:application/pgp-keys;base64,xjMEaAVqNxYJKwYBBAHaRw8BAQdAnQ1KcTZYpcfbGyXkgPHJsCJQn/mn2a4F5SH7tccFNF/NHDxhcDNtNWNzNjNAbmluZS50ZXN0cnVuLm9yZz7CjQQQFggANQIZAQUCaAVqNwIbAwQLCQgHBhUICQoLAgMWAgEBJxYhBJCKqRpWzC6rZWWG76Wa27/U0TWBAAoJEKWa27/U0TWBKV8A/RoUFaB7YYc0zLkZWkJr9xTy5jN8T3VsGNJRi2IN1wQTAQDAsLwZkTf4pax2Hu/S0P11e+hsK+7TqF8/YP/toT5zAc44BGgFajcSCisGAQQBl1UBBQEBB0Dw5cbj6CDXHYKJDHvqfCPE1oDcO0194OYjXPf3foYTGAMBCAfCeAQYFggAIAUCaAVqNwIbDBYhBJCKqRpWzC6rZWWG76Wa27/U0TWBAAoJEKWa27/U0TWB2c8BAON7SIbWGpzhCoLP/pKsVycxdH3lc4bAAKwLP2X/cnFyAQCO43AeusNcRYetQJfvtmI9avQkEKWw54QBfFWIiabpDg==
+REV:20250420T214624Z
+END:VCARD
+"""
 
 
 def join_chat(user, invite, log):
@@ -202,8 +210,7 @@ def test_relay_outside_group(crew, bot, crew_member, outsider, log):
     assert outsider_direct_reply.sender == outsider_botcontact
 
     log.step("Send failing message to the outside")
-    alice_vcard = "BEGIN:VCARD\nVERSION:4.0\nEMAIL:alice@example.org\nFN:test\nKEY:data:application/pgp-keys;base64,xjMEaAVqNxYJKwYBBAHaRw8BAQdAnQ1KcTZYpcfbGyXkgPHJsCJQn/mn2a4F5SH7tccFNF/NHDxhcDNtNWNzNjNAbmluZS50ZXN0cnVuLm9yZz7CjQQQFggANQIZAQUCaAVqNwIbAwQLCQgHBhUICQoLAgMWAgEBJxYhBJCKqRpWzC6rZWWG76Wa27/U0TWBAAoJEKWa27/U0TWBKV8A/RoUFaB7YYc0zLkZWkJr9xTy5jN8T3VsGNJRi2IN1wQTAQDAsLwZkTf4pax2Hu/S0P11e+hsK+7TqF8/YP/toT5zAc44BGgFajcSCisGAQQBl1UBBQEBB0Dw5cbj6CDXHYKJDHvqfCPE1oDcO0194OYjXPf3foYTGAMBCAfCeAQYFggAIAUCaAVqNwIbDBYhBJCKqRpWzC6rZWWG76Wa27/U0TWBAAoJEKWa27/U0TWB2c8BAON7SIbWGpzhCoLP/pKsVycxdH3lc4bAAKwLP2X/cnFyAQCO43AeusNcRYetQJfvtmI9avQkEKWw54QBfFWIiabpDg==\nREV:20250420T214624Z\nEND:VCARD"
-    alice_contact = bot.account.import_vcard(alice_vcard)[0]
+    alice_contact = bot.account.import_vcard(ALICE_VCARD)[0]
     group_msg_from_outsider.chat.add_contact(alice_contact)
     bot._process_events(INDEFINITELY, until_event=EventType.MSG_FAILED)
     failing_reply = user_relay_group.send_message(
@@ -215,6 +222,7 @@ def test_relay_outside_group(crew, bot, crew_member, outsider, log):
     bot._process_events(INDEFINITELY, until_event=EventType.MSG_FAILED)
     error_msg = crew_member.wait_for_incoming_msg().get_snapshot()
     assert "Delivery failed" in error_msg.text
+    crew_member.wait_for_reactions_changed()
     assert failing_reply.get_snapshot().reactions.reactions[0].emoji == "❌"
 
 
@@ -364,20 +372,91 @@ def test_change_avatar(crew, bot, crew_member, log):
 
 
 @pytest.mark.timeout(TIMEOUT)
-def test_new_message_error(crew, bot, crew_member, log):
+def test_new_message_errors(crew, bot, crew_member, log, tmpdir):
     log.step("Send /new_message command")
     rec = "alice@example.org"
-    command = f"/new_message {rec} This_Message_will_fail test"
-    crew.chat.send_text(command)
+    new_message_command = f"/new_message {rec} This_Message_will_fail test"
+    first_command = crew.chat.send_text(new_message_command)
 
     log.step("Let bot receive and process it")
     bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
-    assert command in [msg.get_snapshot().text for msg in bot.account.get_chatlist()[0].get_messages()]
+    assert new_message_command in [msg.get_snapshot().text for msg in bot.account.get_chatlist()[0].get_messages()]
 
     log.step("User receives error message")
     error_msg = crew_member.wait_for_incoming_msg().get_snapshot()
     assert error_msg.text == f"failed to create contacts for {rec}: no encryption available, use /add_contact first"
-    # XXX test /add_contact fails as well
+
+    log.step("User sends /add_contact")
+    vcf_file = tmpdir / "alice.vcf"
+    with open(vcf_file, "w") as f:
+        f.write(ALICE_VCARD)
+    crew.chat.send_message(text="/add_contact", file=str(vcf_file))
+    log.step("Bot process /add_contact command")
+    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    log.step("User receives confirmation")
+    bot_reply = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert bot_reply.text == "Contact imported. You can now write them with: /new_message alice@example.org"
+
+    log.step("Try /new_message command again")
+    second_command = crew.chat.send_text(new_message_command)
+    log.step("Let bot receive and process it")
+    command_event = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot_command = bot.account.get_message_by_id(command_event.msg_id).get_snapshot()
+    assert bot_command.text == new_message_command
+
+    log.step("User receives confirmation")
+    relay_group_init = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert relay_group_init.text == "We sent a message to test (alice@example.org).\n\nThis was our first message:"
+    own_msg = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert own_msg.text == "This Message will fail test"
+    log.step("Bot receives MSG_FAILED")
+    success_msg = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert "Message successfully sent" in success_msg.text
+    bot._process_events(INDEFINITELY, until_event=EventType.MSG_FAILED)
+    log.step("User receives failure notice")
+    error_msg = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert "Delivery failed" in error_msg.text
+    assert error_msg.chat == second_command.get_snapshot().chat
+    crew_member.wait_for_reactions_changed()
+    assert second_command.get_reactions().reactions[0].emoji == "❌"
+    assert not first_command.get_reactions()
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_new_message_success(crew, bot, crew_member, log, tmpdir, outsider):
+    log.step("User adds outsider contact")
+    outsider_invite = outsider.get_qr_code()
+    user_outsider_chat = join_chat(crew_member, outsider_invite, log)
+    user_outsider_contact = user_outsider_chat.get_contacts()[0]
+    assert outsider.get_config("addr") == user_outsider_contact.get_snapshot().address
+    outsider_vcard = crew_member.make_vcard([user_outsider_contact])
+    vcf_file = tmpdir / "outsider.vcf"
+    with open(vcf_file, "w") as f:
+        f.write(outsider_vcard)
+    crew.chat.send_message(text="/add_contact", file=str(vcf_file))
+    log.step("Bot process /add_contact command")
+    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    assert len(bot.account.get_contacts()) > 1
+    for contact in bot.account.get_contacts():
+        if contact.get_snapshot().address == user_outsider_contact.get_snapshot().address:
+            if contact.get_snapshot().e2ee_avail:
+                bot_outsidercontact = contact
+    assert bot_outsidercontact
+    log.step("User receives confirmation")
+    bot_reply = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert "Contact imported. You can now write them with: /new_message " in bot_reply.text
+
+    log.step("User sends /new_message command")
+    new_message_command = f"/new_message {user_outsider_contact.get_snapshot().address} This_should_work test"
+    crew.chat.send_text(new_message_command)
+    log.step("Let bot receive and process it")
+    command_event = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot_command = bot.account.get_message_by_id(command_event.msg_id).get_snapshot()
+    assert bot_command.text == new_message_command
+
+    outsider_new_msg = outsider.wait_for_incoming_msg().get_snapshot()
+    recipients, title, text = parse_new_command_args(new_message_command)
+    assert outsider_new_msg.text == f"{title} {text}"
 
 
 @pytest.mark.timeout(TIMEOUT)

@@ -86,7 +86,7 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
 
 
 @pytest.mark.timeout(TIMEOUT)
-def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
+def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     log.step("send message to bot")
     bot_invite = bot.account.get_qr_code()
     outsider_outside_chat = join_chat(outsider, bot_invite, log)
@@ -95,10 +95,10 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
 
     log.step("get outside chat")
     ev = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
-    message_from_outsider = bot.account.get_message_by_id(ev.msg_id).get_snapshot()
-    bot_outside_chat = message_from_outsider.chat
+    group_msg_from_outsider = bot.account.get_message_by_id(ev.msg_id).get_snapshot()
+    bot_outside_chat = group_msg_from_outsider.chat
     assert not is_relay_group(bot_outside_chat)
-    assert message_from_outsider.state == MessageState.IN_SEEN
+    assert group_msg_from_outsider.state == MessageState.IN_SEEN
 
     log.step("get relay group")
     user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
@@ -119,11 +119,10 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
     assert is_relay_group(bot_relay_group)
 
     log.step("send direct reply, should be forwarded")
-    user_relay_group.send_message(
+    outside_group_reply = user_relay_group.send_message(
         text="This should be forwarded to the outsider", quoted_msg=user_forwarded_message_from_outsider.message
     )
     bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
-    assert message_from_outsider.state == MessageState.IN_SEEN
 
     log.step("check that direct reply was forwarded to outsider")
     outsider_direct_reply = outsider.wait_for_incoming_msg().get_snapshot()
@@ -131,11 +130,19 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
     assert outsider_direct_reply.chat == outsider_outside_chat
     assert outsider_direct_reply.sender == outsider_botcontact
 
+    log.step("react to user's reply to indicate the message was forwarded")
+    bot._process_events(INDEFINITELY, until_event=EventType.MSG_DELIVERED)
+    crew_member.wait_for_reactions_changed()
+    assert outside_group_reply.get_snapshot().reactions.reactions[0].emoji == "✅"
+
     log.step("check that normal reply was not forwarded to outsider")
     assert bot_chatter_in_relay_group.text not in [msg.get_snapshot().text for msg in bot_outside_chat.get_messages()]
+    assert not bot_chatter_in_relay_group.reactions
 
     log.step("reply with outsider")
     outsider_outside_chat.send_text("Second message by outsider")
+    log.step("forward with bot")
+    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
 
     log.step("check that outsider's reply ends up in the same chat")
     user_second_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
@@ -145,6 +152,70 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
     for chat in outsider.get_chatlist():
         for msg in chat.get_messages():
             assert "This is the relay group for" not in msg.get_snapshot().text
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_relay_outside_group(crew, bot, crew_member, outsider, log):
+    log.step("send message to bot")
+    bot_invite = bot.account.get_qr_code()
+    outsider_outside_chat = join_chat(outsider, bot_invite, log)
+    outsider_botcontact = outsider_outside_chat.get_contacts()[0]
+
+    log.step("test relaying out of and into groups")
+    group_title = "Fancy group"
+    outsider_outside_group = outsider.create_group(group_title)
+    outsider_outside_group.add_contact(outsider_botcontact)
+    outsider_outside_group.send_text("Group message by outsider")
+    log.step("receive group message with bot, create relay group")
+    ev = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    group_msg_from_outsider = bot.account.get_message_by_id(ev.msg_id).get_snapshot()
+    bot_outside_chat = group_msg_from_outsider.chat
+    assert not is_relay_group(bot_outside_chat)
+
+    log.step("receive group message in relay group")
+    user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
+    user_relay_group = user_forwarded_message_from_outsider.chat
+    log.step("check if relay group has relay group properties")
+    assert user_relay_group.get_full_snapshot().name.startswith(
+        "[%s] %s" % (bot.account.get_config("addr").split("@")[0], group_title)
+    )
+    assert user_relay_group.get_messages()[0].get_snapshot().text == "Messages are end-to-end encrypted."
+    crew_members = set(c.get_snapshot().address for c in crew.chat.get_contacts())
+    relay_group_members = set(c.get_snapshot().address for c in user_relay_group.get_contacts())
+    assert crew_members == relay_group_members
+
+    log.step("send direct reply, should be forwarded")
+    outside_group_reply = user_relay_group.send_message(
+        text="This should be forwarded to the outsider", quoted_msg=user_forwarded_message_from_outsider.message
+    )
+    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+
+    log.step("react to indicate successful forward to group")
+    bot._process_events(INDEFINITELY, until_event=EventType.MSG_DELIVERED)
+    crew_member.wait_for_reactions_changed()
+    assert outside_group_reply.get_snapshot().reactions.reactions[0].emoji == "✅"
+
+    log.step("check that direct reply was forwarded to outsider")
+    outsider_direct_reply = outsider.wait_for_incoming_msg().get_snapshot()
+    assert outsider_direct_reply.text == "This should be forwarded to the outsider"
+    assert outsider_direct_reply.chat == outsider_outside_group
+    assert outsider_direct_reply.sender == outsider_botcontact
+
+    log.step("Send failing message to the outside")
+    alice_vcard = "BEGIN:VCARD\nVERSION:4.0\nEMAIL:alice@example.org\nFN:test\nKEY:data:application/pgp-keys;base64,xjMEaAVqNxYJKwYBBAHaRw8BAQdAnQ1KcTZYpcfbGyXkgPHJsCJQn/mn2a4F5SH7tccFNF/NHDxhcDNtNWNzNjNAbmluZS50ZXN0cnVuLm9yZz7CjQQQFggANQIZAQUCaAVqNwIbAwQLCQgHBhUICQoLAgMWAgEBJxYhBJCKqRpWzC6rZWWG76Wa27/U0TWBAAoJEKWa27/U0TWBKV8A/RoUFaB7YYc0zLkZWkJr9xTy5jN8T3VsGNJRi2IN1wQTAQDAsLwZkTf4pax2Hu/S0P11e+hsK+7TqF8/YP/toT5zAc44BGgFajcSCisGAQQBl1UBBQEBB0Dw5cbj6CDXHYKJDHvqfCPE1oDcO0194OYjXPf3foYTGAMBCAfCeAQYFggAIAUCaAVqNwIbDBYhBJCKqRpWzC6rZWWG76Wa27/U0TWBAAoJEKWa27/U0TWB2c8BAON7SIbWGpzhCoLP/pKsVycxdH3lc4bAAKwLP2X/cnFyAQCO43AeusNcRYetQJfvtmI9avQkEKWw54QBfFWIiabpDg==\nREV:20250420T214624Z\nEND:VCARD"
+    alice_contact = bot.account.import_vcard(alice_vcard)[0]
+    group_msg_from_outsider.chat.add_contact(alice_contact)
+    bot._process_events(INDEFINITELY, until_event=EventType.MSG_FAILED)
+    failing_reply = user_relay_group.send_message(
+        text="This message will fail to be forwarded", quoted_msg=user_forwarded_message_from_outsider.message
+    )
+    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+
+    log.step("react to user's reply to indicate forwarding the message failed")
+    bot._process_events(INDEFINITELY, until_event=EventType.MSG_FAILED)
+    error_msg = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert "Delivery failed" in error_msg.text
+    assert failing_reply.get_snapshot().reactions.reactions[0].emoji == "❌"
 
 
 @pytest.mark.timeout(TIMEOUT)

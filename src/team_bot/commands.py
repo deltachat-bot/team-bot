@@ -170,9 +170,8 @@ def add_contact(account: Account, command: AttrDict) -> str:
     """
     with open(command.file, "r") as f:
         contacts = account.import_vcard(f.read())
-    return "Contact imported. You can now send a /new_message to " + ",".join(
-        [c.get_snapshot().address for c in contacts]
-    )
+    possible_recipients = ",".join([c.get_snapshot().address for c in contacts])
+    return "Contact imported. You can now write them with /new_message " + possible_recipients
 
 
 def offboard(msg: AttrDict, displayname: str) -> None:

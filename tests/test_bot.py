@@ -87,7 +87,7 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
 
 @pytest.mark.timeout(TIMEOUT)
 def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
-    log.step("create outside chat")
+    log.step("send message to bot")
     bot_invite = bot.account.get_qr_code()
     outsider_outside_chat = join_chat(outsider, bot_invite, log)
     outsider_botcontact = outsider_outside_chat.get_contacts()[0]
@@ -98,7 +98,7 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
     message_from_outsider = bot.account.get_message_by_id(ev.msg_id).get_snapshot()
     bot_outside_chat = message_from_outsider.chat
     assert not is_relay_group(bot_outside_chat)
-    assert message_from_outsider.state == MessageState.IN_FRESH
+    assert message_from_outsider.state == MessageState.IN_SEEN
 
     log.step("get relay group")
     user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
@@ -111,13 +111,16 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
     assert bot_relay_group.get_full_snapshot().name.startswith(
         "[%s] " % (bot.account.get_config("addr").split("@")[0],)
     )
-    assert bot_relay_group.get_messages()[0].sender == bot.account.self_contact
-    assert crew.chat.get_contacts() == bot_relay_group.get_contacts()
+    assert bot_relay_group.get_messages()[0].get_snapshot().text == "Messages are end-to-end encrypted."
+    assert bot_relay_group.get_messages()[1].get_snapshot().sender == bot.account.self_contact
+    crew_members = set(c.get_snapshot().address for c in crew.chat.get_contacts())
+    relay_group_members = set(c.get_snapshot().address for c in bot_relay_group.get_contacts())
+    assert crew_members == relay_group_members
     assert is_relay_group(bot_relay_group)
 
     log.step("send direct reply, should be forwarded")
-    user_relay_group.send_msg(
-        text="This should be forwarded to the outsider", quote=user_forwarded_message_from_outsider
+    user_relay_group.send_message(
+        text="This should be forwarded to the outsider", quoted_msg=user_forwarded_message_from_outsider.message
     )
     bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
     assert message_from_outsider.state == MessageState.IN_SEEN

@@ -1,11 +1,10 @@
 import os.path
-import time
 
 import pytest
 from deltachat_rpc_client import EventType
 from deltachat_rpc_client.const import MessageState
 
-from team_bot.util import is_relay_group
+from team_bot.util import get_crew_id_from_account, get_relay_groups, is_relay_group
 
 TIMEOUT = 40
 INDEFINITELY = lambda _: False
@@ -147,39 +146,52 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
 
 @pytest.mark.timeout(TIMEOUT)
 def test_offboarding(crew, bot, crew_member, outsider, log):
-    log.step("outsider sends message, creates relay group")
+    outsider_name = outsider.get_config("displayname")
+    log.step("outsider sends message to team-bot")
     bot_invite = bot.account.get_qr_code()
     outsider_outside_chat = join_chat(outsider, bot_invite, log)
-    outsider_outside_chat.send_text("test 1:1 message to bot")
-
-    log.step("get relay group")
+    orig_text = "test 1:1 message to bot"
+    outsider_outside_chat.send_text(orig_text)
+    log.step("bot creates relay group")
     bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    log.step("user gets added to relay group")
     user_relay_group = crew_member.wait_for_incoming_msg().get_snapshot().chat
-    bot_relay_group = bot.account.get_chatlist()[-1]
+    assert crew_member.wait_for_incoming_msg().get_snapshot().text == orig_text
+    bot_relay_group = bot.account.get_chat_by_id(get_relay_groups(bot.account)[0][1])
+    assert is_relay_group(bot_relay_group)
 
-    log.step("outsider gets added to crew")
+    log.step("user adds outsider to crew")
     qr = crew.chat.get_qr_code()
     outsider.secure_join(qr)
     outsider.wait_for_securejoin_joiner_success()
+    assert "Member Outsider for TEST team added" in bot.account.wait_for_incoming_msg().get_snapshot().text
 
     log.step("user kicks outsider from crew")
-    crew.remove_contact(crew_member.create_contact(outsider))
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    crew.chat.remove_contact(crew_member.create_contact(outsider))
+    outsider_removed = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    assert f"{outsider_name} removed by" in bot.account.get_message_by_id(outsider_removed.msg_id).get_snapshot().text
 
     log.step("user leaves crew")
-    crew.remove_contact(crew_member)
-    log.step("make sure they are also offboarded from relay group")
-    bot.account.wait_for_incoming_msg()
-    crew_member.wait_for_incoming_msg()
-    crew_member.wait_for_incoming_msg()
-    crew_member.wait_for_incoming_msg()
+    crew.chat.remove_contact(crew_member)
+    log.step("user gets offboarded from relay group")
+    user_leaves = bot._process_events(INDEFINITELY, until_event=EventType.CHAT_MODIFIED)
+    assert user_leaves.chat_id == get_crew_id_from_account(bot.account)
+    bot._process_messages()
     for contact in bot_relay_group.get_contacts():
         assert crew_member.get_config("addr") != contact.get_snapshot().address
 
+    log.step("user receives removal notice")
+    assert "Member Me removed by Bot" in crew_member.wait_for_incoming_msg().get_snapshot().text
+
     log.step("make sure there is no message in relay group that outsider was kicked")
     for msg in user_relay_group.get_messages():
-        print(msg.text)
-        assert outsider.get_config("addr") + " removed by " not in msg.text
+        print(msg.get_snapshot().text)
+        assert outsider.get_config("displayname") + " removed by " not in msg.get_snapshot().text
+
+    log.step("make sure there is no message in outside chat that user was kicked")
+    for msg in outsider_outside_chat.get_messages():
+        print(msg.get_snapshot().text)
+        assert crew_member.get_config("displayname") + " removed by " not in msg.get_snapshot().text
 
 
 @pytest.mark.timeout(TIMEOUT)

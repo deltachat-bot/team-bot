@@ -4,7 +4,7 @@ import os
 import re
 
 import pickledb
-from deltachat_rpc_client import Account, Chat, Contact, DeltaChat, Message, Rpc
+from deltachat_rpc_client import Account, Chat, DeltaChat, Message, Rpc
 from deltachat_rpc_client._utils import AttrDict
 from deltachat_rpc_client.rpc import JsonRpcError
 
@@ -165,14 +165,24 @@ def start_chat(
     return message, "Message successfully sent."
 
 
-def offboard(msg: AttrDict, ex_admin: Contact) -> None:
+def offboard(msg: AttrDict, displayname: str) -> None:
     """Remove a former crew member from all relay groups they are part of.
 
     :param msg: the AttrDict of the message causing the member removal.
-    :param ex_admin: a contact which just got removed from the crew.
+    :param displayname: the display name of a contact which just got removed from the crew.
     """
     account = msg.chat.account
-    for mapping in get_relay_groups(account):
-        relay_group = account.get_chat_by_id(mapping[1])
-        if ex_admin in relay_group.get_contacts():
-            relay_group.remove_contact(ex_admin)
+    ex_member = None
+    for contact in [account.get_contact_by_id(past_id) for past_id in msg.chat.get_full_snapshot().past_contact_ids]:
+        if contact.get_snapshot().display_name.lower() == displayname:
+            ex_member = contact
+    if not ex_member:
+        log.error(f"Could not find contact for {displayname} in past crew members")
+
+    else:
+        for mapping in get_relay_groups(account):
+            relay_group = account.get_chat_by_id(mapping[1])
+            if ex_member in relay_group.get_contacts():
+                log.info(f"{relay_group.get_full_snapshot().name}: removing {ex_member.get_snapshot().display_name}")
+                relay_group.remove_contact(ex_member)
+        return

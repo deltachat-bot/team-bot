@@ -388,7 +388,7 @@ def test_new_message_errors(crew, bot, crew_member, log, tmpdir):
     bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
     log.step("User receives confirmation")
     bot_reply = crew_member.wait_for_incoming_msg().get_snapshot()
-    assert bot_reply.text == "Contact imported. You can now send a /new_message to alice@example.org"
+    assert bot_reply.text == "Contact imported. You can now write them with: /new_message alice@example.org"
 
     log.step("Try /new_message command again")
     second_command = crew.chat.send_text(new_message_command)
@@ -437,7 +437,7 @@ def test_new_message_success(crew, bot, crew_member, log, tmpdir, outsider):
     assert bot_outsidercontact
     log.step("User receives confirmation")
     bot_reply = crew_member.wait_for_incoming_msg().get_snapshot()
-    assert "Contact imported. You can now send a /new_message to " in bot_reply.text
+    assert "Contact imported. You can now write them with: /new_message " in bot_reply.text
 
     log.step("User sends /new_message command")
     new_message_command = f"/new_message {user_outsider_contact.get_snapshot().address} This_should_work test"

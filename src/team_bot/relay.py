@@ -39,7 +39,7 @@ def catch_events(event):
 
     if event.kind == EventType.MSG_DELIVERED:
         delivered_msg = event.account.get_message_by_id(event.msg_id)
-        log.warning(f"Delivered message successfully: {delivered_msg.get_snapshot().text}")
+        log.info(f"Delivered message successfully: {delivered_msg.get_snapshot().text}")
         if get_relay_group(delivered_msg.get_snapshot().chat):
             orig_chat, orig_message = find_original_message(delivered_msg, event.account)
             if orig_chat:

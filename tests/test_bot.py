@@ -6,7 +6,7 @@ from deltachat_rpc_client.const import MessageState
 
 from team_bot.util import get_crew_id_from_account, get_relay_groups, is_relay_group
 
-TIMEOUT = 40
+TIMEOUT = 30
 INDEFINITELY = lambda _: False
 
 
@@ -101,8 +101,8 @@ def test_relay_group_forwarding(crew, bot, crew_member, outsider, log):
     assert message_from_outsider.state == MessageState.IN_FRESH
 
     log.step("get relay group")
-    user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg()
-    user_relay_group = user_forwarded_message_from_outsider.create_chat()
+    user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
+    user_relay_group = user_forwarded_message_from_outsider.chat
     user_relay_group.send_text("Chatter in relay group")  # send normal reply, not forwarded
     bot_chatter_in_relay_group = bot.account.wait_for_incoming_msg().get_snapshot()
     bot_relay_group = bot_chatter_in_relay_group.chat
@@ -203,8 +203,8 @@ def test_default_outside_help(crew, bot, crew_member, outsider, log):
 
     log.step("get response")
     bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
-    outside_help_message = outsider.wait_for_incoming_msg()
-    assert "I forward messages to the " in outside_help_message.get_snapshot().text
+    outside_help_message = outsider.wait_for_incoming_msg().get_snapshot()
+    assert "I forward messages to the " in outside_help_message.text
 
     log.step("assert no relay group was created")
     assert len(bot.account.get_chatlist()) == 3
@@ -218,11 +218,11 @@ def test_empty_outside_help(crew, bot, crew_member, outsider, log):
     crew.chat.send_text("/set_outside_help")
 
     log.step("ensure /set_outside_help arrives before sending /help")
-    bot.account.wait_for_incoming_msg()
+    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
 
     log.step("create outside chat")
-    outsider_botcontact = outsider.create_contact(bot.account.get_config("addr"))
-    outsider_outside_chat = outsider.create_chat(outsider_botcontact)
+    bot_invite = bot.account.get_qr_code()
+    outsider_outside_chat = join_chat(outsider, bot_invite, log)
     outsider_outside_chat.send_text("/help")
 
     log.step("Bot receives /help")
@@ -231,7 +231,7 @@ def test_empty_outside_help(crew, bot, crew_member, outsider, log):
     log.step("get forwarded /help message")
     crew_member.wait_for_incoming_msg()  # "Removed help message for outsiders"
     crew_member.wait_for_incoming_msg()  # explanation message
-    user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg()
+    user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
     assert user_forwarded_message_from_outsider.text == "/help"
 
 
@@ -244,18 +244,18 @@ def test_changed_outside_help(crew, bot, crew_member, outsider, log):
     outside_help_text = "Hi friend :) send me messages to chat with the team"
     crew.chat.send_text("/set_outside_help " + outside_help_text)
     log.step("ensure /set_outside_help arrives before sending /help")
-    bot.account.wait_for_incoming_msg()
+    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
 
     log.step("create outside chat")
-    outsider_botcontact = outsider.create_contact(bot.account.get_config("addr"))
-    outsider_outside_chat = outsider.create_chat(outsider_botcontact)
+    bot_invite = bot.account.get_qr_code()
+    outsider_outside_chat = join_chat(outsider, bot_invite, log)
     outsider_outside_chat.send_text("/help")
 
     log.step("Bot processes /help")
     bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
 
     log.step("get response")
-    outside_help_message = outsider.wait_for_incoming_msg()
+    outside_help_message = outsider.wait_for_incoming_msg().get_snapshot()
     assert outside_help_message.text == outside_help_text
 
     log.step("assert no relay group was created")

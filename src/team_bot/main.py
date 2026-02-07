@@ -101,6 +101,8 @@ def main():
     run_bot(
         log,
         accounts_dir=accounts_dir,
+        email=args.email,
+        password=args.password,
         hooks=relayhooks,
     )
 

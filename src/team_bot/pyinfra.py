@@ -70,7 +70,7 @@ def deploy_team_bot(
 
     files.directory(
         name="chown team_bot directory",
-        path=f"/home/{unix_user}/.config/team_bot",
+        path=dbdir.rsplit("/", maxsplit=1)[0],
         mode="0700",
         recursive=True,
         user=unix_user,

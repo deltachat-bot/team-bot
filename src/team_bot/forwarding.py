@@ -88,6 +88,8 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
         quoted_msg = msg.quote.message_id
     else:
         quoted_msg = None
+    if not msg.has_html:
+        msg.html = None
     relay_group.send_message(
         override_sender_name=msg.sender.get_snapshot().name_and_addr,
         html=msg.html if msg.has_html else None,

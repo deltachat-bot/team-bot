@@ -7,7 +7,6 @@ from deltachat_rpc_client.const import MessageState
 from team_bot.util import get_crew_id_from_account, get_relay_groups, is_relay_group, parse_new_command_args
 
 TIMEOUT = 40
-INDEFINITELY = lambda _: False
 ALICE_VCARD = """BEGIN:VCARD
 VERSION:4.0
 EMAIL:alice@example.org
@@ -43,7 +42,7 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
     outsider_botcontact = outsider_outside_chat.get_contacts()[0]
     outsider_outside_chat.send_text(text)
     log.step("receiving message from outsider in 1:1 chat")
-    message_event = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    message_event = bot._process_events(until_event=EventType.INCOMING_MSG)
     bot_message_from_outsider = bot.account.get_message_by_id(message_event.msg_id).get_snapshot()
     log.step("reveiced message from outsider in 1:1 chat")
     bot_outside_chat = bot_message_from_outsider.chat
@@ -55,7 +54,7 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
     relayed_msg = crew_member.wait_for_incoming_msg().get_snapshot()
     relayed_msg.chat.remove_contact(crew_member.self_contact)
     log.step("bot receives leave message")
-    leave_event = bot._process_events(INDEFINITELY, until_event=EventType.CHAT_MODIFIED)
+    leave_event = bot._process_events(until_event=EventType.CHAT_MODIFIED)
     bot_relay_group = bot.account.get_chat_by_id(leave_event.chat_id)
     assert is_relay_group(bot_relay_group)
 
@@ -77,7 +76,7 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
     user_to_bot.send_text(text)
     log.step("receiving message from user in 1:1 chat")
 
-    message_event = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    message_event = bot._process_events(until_event=EventType.INCOMING_MSG)
     bot_message_from_user = bot.account.get_message_by_id(message_event.msg_id).get_snapshot()
     assert bot_message_from_user.text == text
     assert not is_relay_group(bot_message_from_user.chat)
@@ -102,7 +101,7 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     outsider_outside_chat.send_text("test 1:1 message to bot")
 
     log.step("get outside chat")
-    ev = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    ev = bot._process_events(until_event=EventType.INCOMING_MSG)
     group_msg_from_outsider = bot.account.get_message_by_id(ev.msg_id).get_snapshot()
     bot_outside_chat = group_msg_from_outsider.chat
     assert not is_relay_group(bot_outside_chat)
@@ -130,7 +129,7 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     outside_group_reply = user_relay_group.send_message(
         text="This should be forwarded to the outsider", quoted_msg=user_forwarded_message_from_outsider.message
     )
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
 
     log.step("check that direct reply was forwarded to outsider")
     outsider_direct_reply = outsider.wait_for_incoming_msg().get_snapshot()
@@ -139,7 +138,7 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     assert outsider_direct_reply.sender == outsider_botcontact
 
     log.step("react to user's reply to indicate the message was forwarded")
-    bot._process_events(INDEFINITELY, until_event=EventType.MSG_DELIVERED)
+    bot._process_events(until_event=EventType.MSG_DELIVERED)
     crew_member.wait_for_reactions_changed()
     assert outside_group_reply.get_snapshot().reactions.reactions[0].emoji == "✅"
 
@@ -150,7 +149,7 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     log.step("reply with outsider")
     outsider_outside_chat.send_text("Second message by outsider")
     log.step("forward with bot")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
 
     log.step("check that outsider's reply ends up in the same chat")
     user_second_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
@@ -175,7 +174,7 @@ def test_relay_outside_group(crew, bot, crew_member, outsider, log):
     outsider_outside_group.add_contact(outsider_botcontact)
     outsider_outside_group.send_text("Group message by outsider")
     log.step("receive group message with bot, create relay group")
-    ev = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    ev = bot._process_events(until_event=EventType.INCOMING_MSG)
     group_msg_from_outsider = bot.account.get_message_by_id(ev.msg_id).get_snapshot()
     bot_outside_chat = group_msg_from_outsider.chat
     assert not is_relay_group(bot_outside_chat)
@@ -196,10 +195,10 @@ def test_relay_outside_group(crew, bot, crew_member, outsider, log):
     outside_group_reply = user_relay_group.send_message(
         text="This should be forwarded to the outsider", quoted_msg=user_forwarded_message_from_outsider.message
     )
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
 
     log.step("react to indicate successful forward to group")
-    bot._process_events(INDEFINITELY, until_event=EventType.MSG_DELIVERED)
+    bot._process_events(until_event=EventType.MSG_DELIVERED)
     crew_member.wait_for_reactions_changed()
     assert outside_group_reply.get_snapshot().reactions.reactions[0].emoji == "✅"
 
@@ -212,14 +211,14 @@ def test_relay_outside_group(crew, bot, crew_member, outsider, log):
     log.step("Send failing message to the outside")
     alice_contact = bot.account.import_vcard(ALICE_VCARD)[0]
     group_msg_from_outsider.chat.add_contact(alice_contact)
-    bot._process_events(INDEFINITELY, until_event=EventType.MSG_FAILED)
+    bot._process_events(until_event=EventType.MSG_FAILED)
     failing_reply = user_relay_group.send_message(
         text="This message will fail to be forwarded", quoted_msg=user_forwarded_message_from_outsider.message
     )
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
 
     log.step("react to user's reply to indicate forwarding the message failed")
-    bot._process_events(INDEFINITELY, until_event=EventType.MSG_FAILED)
+    bot._process_events(until_event=EventType.MSG_FAILED)
     error_msg = crew_member.wait_for_incoming_msg().get_snapshot()
     assert "Delivery failed" in error_msg.text
     crew_member.wait_for_reactions_changed()
@@ -235,7 +234,7 @@ def test_offboarding(crew, bot, crew_member, outsider, log):
     orig_text = "test 1:1 message to bot"
     outsider_outside_chat.send_text(orig_text)
     log.step("bot creates relay group")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
     log.step("user gets added to relay group")
     user_relay_group = crew_member.wait_for_incoming_msg().get_snapshot().chat
     assert crew_member.wait_for_incoming_msg().get_snapshot().text == orig_text
@@ -250,13 +249,13 @@ def test_offboarding(crew, bot, crew_member, outsider, log):
 
     log.step("user kicks outsider from crew")
     crew.chat.remove_contact(crew_member.create_contact(outsider))
-    outsider_removed = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    outsider_removed = bot._process_events(until_event=EventType.INCOMING_MSG)
     assert f"{outsider_name} removed by" in bot.account.get_message_by_id(outsider_removed.msg_id).get_snapshot().text
 
     log.step("user leaves crew")
     crew.chat.remove_contact(crew_member)
     log.step("user gets offboarded from relay group")
-    user_leaves = bot._process_events(INDEFINITELY, until_event=EventType.CHAT_MODIFIED)
+    user_leaves = bot._process_events(until_event=EventType.CHAT_MODIFIED)
     assert user_leaves.chat_id == get_crew_id_from_account(bot.account)
     bot._process_messages()
     for contact in bot_relay_group.get_contacts():
@@ -284,7 +283,7 @@ def test_default_outside_help(crew, bot, crew_member, outsider, log):
     outsider_outside_chat.send_text("/help")
 
     log.step("get response")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
     outside_help_message = outsider.wait_for_incoming_msg().get_snapshot()
     assert "I forward messages to the " in outside_help_message.text
 
@@ -300,7 +299,7 @@ def test_empty_outside_help(crew, bot, crew_member, outsider, log):
     crew.chat.send_text("/set_outside_help")
 
     log.step("ensure /set_outside_help arrives before sending /help")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
 
     log.step("create outside chat")
     bot_invite = bot.account.get_qr_code()
@@ -308,7 +307,7 @@ def test_empty_outside_help(crew, bot, crew_member, outsider, log):
     outsider_outside_chat.send_text("/help")
 
     log.step("Bot receives /help")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
 
     log.step("get forwarded /help message")
     crew_member.wait_for_incoming_msg()  # "Removed help message for outsiders"
@@ -326,7 +325,7 @@ def test_changed_outside_help(crew, bot, crew_member, outsider, log):
     outside_help_text = "Hi friend :) send me messages to chat with the team"
     crew.chat.send_text("/set_outside_help " + outside_help_text)
     log.step("ensure /set_outside_help arrives before sending /help")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
 
     log.step("create outside chat")
     bot_invite = bot.account.get_qr_code()
@@ -334,7 +333,7 @@ def test_changed_outside_help(crew, bot, crew_member, outsider, log):
     outsider_outside_chat.send_text("/help")
 
     log.step("Bot processes /help")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
 
     log.step("get response")
     outside_help_message = outsider.wait_for_incoming_msg().get_snapshot()
@@ -361,7 +360,7 @@ def test_change_avatar(crew, bot, crew_member, log):
 
     log.step("set avatar to example image")
     crew.chat.send_message(text="/set_avatar", file=example_png_path)
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
     group_avatar_changed_msg = crew_member.wait_for_incoming_msg().get_snapshot()
     assert "Group image changed" in group_avatar_changed_msg.text
     assert crew.chat.get_full_snapshot().profile_image
@@ -379,7 +378,7 @@ def test_new_message_errors(crew, bot, crew_member, log, tmpdir):
     first_command = crew.chat.send_text(new_message_command)
 
     log.step("Let bot receive and process it")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
     assert new_message_command in [msg.get_snapshot().text for msg in bot.account.get_chatlist()[0].get_messages()]
 
     log.step("User receives error message")
@@ -392,7 +391,7 @@ def test_new_message_errors(crew, bot, crew_member, log, tmpdir):
         f.write(ALICE_VCARD)
     crew.chat.send_message(text="/add_contact", file=str(vcf_file))
     log.step("Bot process /add_contact command")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
     log.step("User receives confirmation")
     bot_reply = crew_member.wait_for_incoming_msg().get_snapshot()
     assert bot_reply.text == "Contact imported. You can now write them with: /new_message alice@example.org"
@@ -400,7 +399,7 @@ def test_new_message_errors(crew, bot, crew_member, log, tmpdir):
     log.step("Try /new_message command again")
     second_command = crew.chat.send_text(new_message_command)
     log.step("Let bot receive and process it")
-    command_event = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    command_event = bot._process_events(until_event=EventType.INCOMING_MSG)
     bot_command = bot.account.get_message_by_id(command_event.msg_id).get_snapshot()
     assert bot_command.text == new_message_command
 
@@ -412,7 +411,7 @@ def test_new_message_errors(crew, bot, crew_member, log, tmpdir):
     log.step("Bot receives MSG_FAILED")
     success_msg = crew_member.wait_for_incoming_msg().get_snapshot()
     assert "Message successfully sent" in success_msg.text
-    bot._process_events(INDEFINITELY, until_event=EventType.MSG_FAILED)
+    bot._process_events(until_event=EventType.MSG_FAILED)
     log.step("User receives failure notice")
     error_msg = crew_member.wait_for_incoming_msg().get_snapshot()
     assert "Delivery failed" in error_msg.text
@@ -435,7 +434,7 @@ def test_new_message_success(crew, bot, crew_member, log, tmpdir, outsider):
         f.write(outsider_vcard)
     crew.chat.send_message(text="/add_contact", file=str(vcf_file))
     log.step("Bot process /add_contact command")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
     assert len(bot.account.get_contacts()) > 1
     for contact in bot.account.get_contacts():
         if contact.get_snapshot().address == user_outsider_contact.get_snapshot().address:
@@ -450,7 +449,7 @@ def test_new_message_success(crew, bot, crew_member, log, tmpdir, outsider):
     new_message_command = f"/new_message {user_outsider_contact.get_snapshot().address} This_should_work test"
     crew.chat.send_text(new_message_command)
     log.step("Let bot receive and process it")
-    command_event = bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    command_event = bot._process_events(until_event=EventType.INCOMING_MSG)
     bot_command = bot.account.get_message_by_id(command_event.msg_id).get_snapshot()
     assert bot_command.text == new_message_command
 
@@ -462,7 +461,7 @@ def test_new_message_success(crew, bot, crew_member, log, tmpdir, outsider):
 @pytest.mark.timeout(TIMEOUT)
 def test_public_invite(crew, bot, crew_member, outsider):
     crew.chat.send_text("/generate-invite")
-    bot._process_events(INDEFINITELY, until_event=EventType.INCOMING_MSG)
+    bot._process_events(until_event=EventType.INCOMING_MSG)
     result = crew_member.wait_for_incoming_msg().get_snapshot()
     assert result.text.startswith("https://i.delta.chat")
 

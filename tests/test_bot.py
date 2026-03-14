@@ -124,6 +124,7 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     relay_group_members = set(c.get_snapshot().address for c in bot_relay_group.get_contacts())
     assert crew_members == relay_group_members
     assert is_relay_group(bot_relay_group)
+    assert not user_relay_group.get_full_snapshot().profile_image
 
     log.step("send direct reply, should be forwarded")
     outside_group_reply = user_relay_group.send_message(
@@ -146,6 +147,12 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     assert bot_chatter_in_relay_group.text not in [msg.get_snapshot().text for msg in bot_outside_chat.get_messages()]
     assert not bot_chatter_in_relay_group.reactions
 
+    log.step("outsider sets avatar")
+    example_png_path = "/usr/share/pixmaps/debian-logo.png"
+    if not os.path.exists(example_png_path):
+        pytest.skip(f"example image not available: {example_png_path}")
+    outsider.set_avatar(example_png_path)
+
     log.step("reply with outsider")
     outsider_outside_chat.send_text("Second message by outsider")
     log.step("forward with bot")
@@ -154,6 +161,7 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     log.step("check that outsider's reply ends up in the same chat")
     user_second_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
     assert user_second_message_from_outsider.chat == user_relay_group
+    assert user_relay_group.get_full_snapshot().profile_image
 
     log.step("check that relay group explanation is not forwarded to outsider")
     for chat in outsider.get_chatlist():

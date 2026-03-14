@@ -20,7 +20,6 @@ from .util import (
     get_outside_chat,
     get_relay_group,
     is_relay_group,
-    mark_seen,
 )
 
 log = logging.getLogger("root")
@@ -72,6 +71,7 @@ def member_added_or_removed(event):
 def incoming_message(event):
     msg = event.message_snapshot
     log.debug(msg)
+    msg.message.mark_seen()
     account = msg.chat.account
     crew_id = get_crew_id_from_account(account)
 
@@ -140,7 +140,6 @@ def handle_msg_in_relay_group(msg: AttrDict):
         else:
             log.debug("Ignoring message, just the crew chatting")
     else:
-        mark_seen(msg.chat)
         log.debug("Ignoring message, just the crew chatting")
 
 

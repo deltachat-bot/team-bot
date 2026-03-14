@@ -64,13 +64,6 @@ def get_outside_chat(relay_group: Chat) -> Chat:
             return relay_group.account.get_chat_by_id(mapping[0])
 
 
-def mark_seen(relay_group: Chat):
-    """For a relay group, mark the last messages in its outside chat as seen."""
-    outside_chat = get_outside_chat(relay_group)
-    for msg in outside_chat.get_messages():
-        msg.mark_seen()
-
-
 def parse_new_command_args(command_text: str) -> ([str], str, str):
     """Parse a /new_command message to get recipients, title, and text out of it.
 

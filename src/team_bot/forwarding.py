@@ -65,6 +65,7 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
         relay_group = account.create_group(group_name)
         for member in crew_members:
             relay_group.add_contact(member)
+        relay_group.set_image(msg.chat.get_full_snapshot().profile_image)
 
         outside_chat = msg.chat
         if outside_chat.get_basic_snapshot().chat_type == "Group":
@@ -83,7 +84,8 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
         relay_mappings.append(tuple([msg.chat.id, relay_group.id]))
         set_relay_groups(account, relay_mappings)
 
-    relay_group.set_image(msg.chat.get_full_snapshot().profile_image)
+    if relay_group.get_full_snapshot().profile_image != msg.chat.get_full_snapshot().profile_image:
+        relay_group.set_image(msg.chat.get_full_snapshot().profile_image)
     if msg.quote:
         quoted_msg = msg.quote.message_id
     else:

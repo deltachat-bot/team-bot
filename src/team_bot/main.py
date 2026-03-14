@@ -67,6 +67,7 @@ def run_bot(
                 kwargs={"email": email, "password": password},
             )
             configure_thread.start()
+        log.info("Start listening to messages with " + hooks.__name__)
         if until:
             client.run_until(until)
             return accounts_dir

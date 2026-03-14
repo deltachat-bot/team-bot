@@ -9,6 +9,7 @@ from .util import get_crew_invite, has_crew
 
 log = logging.getLogger("root")
 setuphooks = events.HookCollection()
+setuphooks.__name__ = "Setup hooks"
 
 
 @setuphooks.on(events.RawEvent)

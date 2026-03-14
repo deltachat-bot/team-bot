@@ -24,6 +24,7 @@ from .util import (
 
 log = logging.getLogger("root")
 relayhooks = events.HookCollection()
+relayhooks.__name__ = "Relay hooks"
 
 
 @relayhooks.on(events.RawEvent)

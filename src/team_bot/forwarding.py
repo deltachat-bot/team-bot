@@ -84,6 +84,8 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
         relay_mappings.append(tuple([msg.chat.id, relay_group.id]))
         set_relay_groups(account, relay_mappings)
 
+    if relay_group.get_full_snapshot().profile_image != msg.chat.get_full_snapshot().profile_image:
+        relay_group.set_image(msg.chat.get_full_snapshot().profile_image)
     if msg.quote:
         quoted_msg = msg.quote.message_id
     else:

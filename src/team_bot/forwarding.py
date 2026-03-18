@@ -86,7 +86,7 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
 
     if relay_group.get_full_snapshot().profile_image != msg.chat.get_full_snapshot().profile_image:
         relay_group.set_image(msg.chat.get_full_snapshot().profile_image)
-    if msg.quote:
+    if hasattr(msg.quote, "message_id"):
         quoted_msg = msg.quote.message_id
     else:
         quoted_msg = None

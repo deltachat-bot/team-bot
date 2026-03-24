@@ -6,8 +6,6 @@ from deltachat_rpc_client.events import EventType
 from team_bot.relay import relayhooks
 from team_bot.setup import setuphooks
 
-INDEFINITELY = lambda _: False
-
 
 @pytest.fixture
 def bot(acfactory, log, caplog):
@@ -17,7 +15,7 @@ def bot(acfactory, log, caplog):
     bot.account.set_config("displayname", "Bot from TEST team")
     bot.add_hooks(setuphooks)
     bot.account.start_io()
-    bot._process_events(INDEFINITELY, until_event=EventType.IMAP_INBOX_IDLE)
+    bot._process_events(until_event=EventType.IMAP_INBOX_IDLE)
     return bot
 
 
@@ -36,7 +34,7 @@ def crew(crew_member, bot, log, caplog):
     bot_invite = bot.account.get_qr_code()
     crew_member.secure_join(bot_invite)
 
-    bot._process_events(INDEFINITELY, until_event=EventType.SECUREJOIN_INVITER_PROGRESS)
+    bot._process_events(until_event=EventType.SECUREJOIN_INVITER_PROGRESS)
 
     log.step("Bot changes hooks")
     for hook, event in setuphooks:

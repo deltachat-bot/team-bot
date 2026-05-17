@@ -245,29 +245,29 @@ wheels = [
 
 [[package]]
 name = "deltachat-rpc-client"
-version = "2.40.0"
+version = "2.49.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/53/6b/4b3248d01cbcedcbed93a54eb2826680c2e788f20d5896a4f0aeb86636a6/deltachat_rpc_client-2.40.0.tar.gz", hash = "sha256:bc1e7481db83eb13ca0482533570b38b68c449f2898523e9ff5650d89a6267eb", size = 58197, upload-time = "2026-02-04T22:25:01.261Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/09/a5b77aa5f78e942e36888487b42ea27364c57d46f7907ece48e1e7919059/deltachat_rpc_client-2.49.0.tar.gz", hash = "sha256:98f713032ecf57451132a1f7e86851cdc91e2692aa2054780c70b277e9a97fd2", size = 57650, upload-time = "2026-04-13T08:14:35.862Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/17/84d50ee8cfa02dcff8434c8ea62efdb0a441451be7a84ce085b72d677203/deltachat_rpc_client-2.40.0-py3-none-any.whl", hash = "sha256:ddca5fe978f3d5b6b911a3ed0d9cd08868ac5e336fa913b4106baf4bd87956df", size = 35759, upload-time = "2026-02-04T22:24:58.965Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/7a/837b9b5c736cd5f0dd5b508bb1475bb6da3ea77787db1020296cee69c17c/deltachat_rpc_client-2.49.0-py3-none-any.whl", hash = "sha256:575f65605b3d6622088c9e94eb7005ec252f4e1fe137d265a1e0cb13730afb7b", size = 36383, upload-time = "2026-04-13T08:14:34.738Z" },
 ]
 
 [[package]]
 name = "deltachat-rpc-server"
-version = "2.40.0"
+version = "2.49.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f8/98/1cb9acc7d584e2a972a4fa4b1960be15d93e5f7164a193cc7a5fb5e0aa0e/deltachat_rpc_server-2.40.0-py3-none-android_21_arm64_v8a.whl", hash = "sha256:8c32f805293c904cef650b2ecfc76fa8ca9914f722f5570d08a0a4525e50f3fe", size = 11396715, upload-time = "2026-02-04T23:05:09.178Z" },
-    { url = "https://files.pythonhosted.org/packages/fe/32/d1a8be782d1338b0ea2399eb020503e3fecde5c38c12246bfeb20360363a/deltachat_rpc_server-2.40.0-py3-none-android_21_armeabi_v7a.whl", hash = "sha256:0ae8e13dc745f99d22e9f39e343b78f6ed4b860f7f7e17a8b0fc61d10567c3d4", size = 9682349, upload-time = "2026-02-04T23:05:11.746Z" },
-    { url = "https://files.pythonhosted.org/packages/0b/41/f6dfc756d20f969eff17363a082cdf5198ba2974d2f1592903d98f73a07d/deltachat_rpc_server-2.40.0-py3-none-linux_armv6l.whl", hash = "sha256:d80485aeed39e4e48d3e479e6b5e4417b3d633e827d87ce20aed9f7a5cec0fa2", size = 10520030, upload-time = "2026-02-04T23:05:14.217Z" },
-    { url = "https://files.pythonhosted.org/packages/1c/f9/c835638349ce91d57f5d6422af9c8b2299487f5894d022ac66357470990e/deltachat_rpc_server-2.40.0-py3-none-linux_armv7l.manylinux_2_17_armv7l.manylinux2014_armv7l.musllinux_1_1_armv7l.whl", hash = "sha256:12c262d29bf72893ee5b69f61013ee48775aeb6cd37a084b46c46a890008e16d", size = 10407031, upload-time = "2026-02-04T23:05:16.379Z" },
-    { url = "https://files.pythonhosted.org/packages/25/0e/31e1a9d2585dfaf3dd925163509cc4e59408060994dd251fbf0fef7b7739/deltachat_rpc_server-2.40.0-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:6ddca1c07ebd9bc7ac3559052b03bf9af9d4fa286dc269bfb231278c5282639c", size = 9891819, upload-time = "2026-02-04T23:05:18.648Z" },
-    { url = "https://files.pythonhosted.org/packages/1d/88/5dd40fc696419dc79642e46e2bcbc525199d575a95098c6c5ca910f35882/deltachat_rpc_server-2.40.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:1447a96a3b8805083d5faf4075c0ccdc03ee228e17093990b1c220f4e46909e6", size = 9686560, upload-time = "2026-02-04T23:05:22.004Z" },
-    { url = "https://files.pythonhosted.org/packages/2a/65/f2df6af16b7e7e513a3d7877f1debc43de041b85b7c6bb497e48c1d5396e/deltachat_rpc_server-2.40.0-py3-none-manylinux_2_12_i686.manylinux2010_i686.musllinux_1_1_i686.whl", hash = "sha256:a9d7f5d91da608e1cc5bf7f5cd810a560b179098d13d5e6d71818e2bd7f92ea5", size = 11110475, upload-time = "2026-02-04T23:05:24.775Z" },
-    { url = "https://files.pythonhosted.org/packages/9d/b0/bf12b95d55683b6305488c23f375a9d2c17eb17c97d71012453b8d41f14c/deltachat_rpc_server-2.40.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl", hash = "sha256:8a433dc5f7da339527b28820d03a1fc9de6cfd88d1bdaf279300070092bb5ed4", size = 11354225, upload-time = "2026-02-04T23:05:27.393Z" },
-    { url = "https://files.pythonhosted.org/packages/d6/6b/a9f825019312af11e4ab8ee6824c1c5a201e54acb4ebd7542a659fa4d758/deltachat_rpc_server-2.40.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.musllinux_1_1_x86_64.whl", hash = "sha256:653c6560afda6371ce6b82040be9e43258f1e4fff5706e362d3ef682c1fa4688", size = 11688474, upload-time = "2026-02-04T23:05:29.509Z" },
-    { url = "https://files.pythonhosted.org/packages/d9/c4/d1b13ed032830241b81e4a6097008f5aa8563f13d999b9f68d864a3acdb2/deltachat_rpc_server-2.40.0-py3-none-win32.whl", hash = "sha256:584ed25fce8c8b8403b43e42b961a161e46c30b307f0d99d5b270fbf8dc12493", size = 10486339, upload-time = "2026-02-04T23:05:31.763Z" },
-    { url = "https://files.pythonhosted.org/packages/f4/8f/619f9b5e4d16af143f2b526465482a369f2e2f6d1ef91c9952a26406af62/deltachat_rpc_server-2.40.0-py3-none-win_amd64.whl", hash = "sha256:271f818c395a8d65440e2421e4a526d9a4cb6e9dbffae265a38423df6455bd0d", size = 10490383, upload-time = "2026-02-04T23:05:33.885Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/5c/5cc080e47555116f34c9c14c8c8bad14568499b148bcbb1c736447b9afa5/deltachat_rpc_server-2.49.0-py3-none-android_21_arm64_v8a.whl", hash = "sha256:a5a6aed57436766794764aa90897eddd700bffca979c924725a3dff3b40ccca3", size = 11455996, upload-time = "2026-04-13T09:11:05.039Z" },
+    { url = "https://files.pythonhosted.org/packages/b2/6c/1641b807f7a880a495c58f76f6f333e0db46a1a891cea155d1077e66a831/deltachat_rpc_server-2.49.0-py3-none-android_21_armeabi_v7a.whl", hash = "sha256:100379ca2c29aaa433dd536038ee5603f3ab36517777b0d5923a2d4bd1e4b701", size = 9712072, upload-time = "2026-04-13T09:11:07.88Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/1f/c5c61a1ffd3c2369848db9cd1e83989257b3b5836b07d61c0de9b51c515d/deltachat_rpc_server-2.49.0-py3-none-linux_armv6l.whl", hash = "sha256:4a0719575130ea8d96eeceb4b0c2eca4de276c9b0aa42d6a048438754107003f", size = 10558722, upload-time = "2026-04-13T09:11:10.355Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/ab/65d7f305cca0762a17bcd0686650d33e5b8c2dd66e9a304633066677344e/deltachat_rpc_server-2.49.0-py3-none-linux_armv7l.manylinux_2_17_armv7l.manylinux2014_armv7l.musllinux_1_1_armv7l.whl", hash = "sha256:449c9b714a520b60f843735bdd3fb4be891dd08c15db3e6e1bebb643a7be9178", size = 10457845, upload-time = "2026-04-13T09:11:12.749Z" },
+    { url = "https://files.pythonhosted.org/packages/6d/14/f47884b55bf267115e89826db02ff65a4b409658fc1190c9b793dcd65c7f/deltachat_rpc_server-2.49.0-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:7c6897c9beb0b75ecbbddd9417f05906a5646e61fe7f6f4bec0e1392055c6871", size = 9929478, upload-time = "2026-04-13T09:11:15.567Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/e1/8a0c2657d53b9c463d94b749481cd616a4ba9f8a9b67daa5b506019fd9b3/deltachat_rpc_server-2.49.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:b62592f0217ff2de23fd363c0fb47b17a0de94fb4e7f21e2aa5a7196cd87d6eb", size = 9743447, upload-time = "2026-04-13T09:11:18.209Z" },
+    { url = "https://files.pythonhosted.org/packages/aa/f6/59f4e09dbd6f6f9ada62436ad0a7d16072412bce65f071fa20723c9b024b/deltachat_rpc_server-2.49.0-py3-none-manylinux_2_12_i686.manylinux2010_i686.musllinux_1_1_i686.whl", hash = "sha256:687315e0e9a753c42ae1ad241013b72e863fe267297e17d26f141b277733452a", size = 11172948, upload-time = "2026-04-13T09:11:21.043Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/f1/507556562cf52606b726b2deafb052d90161a3ebf195f15448b807a9311f/deltachat_rpc_server-2.49.0-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl", hash = "sha256:84e1b89cfcfd0be07c9d43fa830f9ebdd84eb6d5c71e558c19ee81d18d7c23c1", size = 11409855, upload-time = "2026-04-13T09:11:23.72Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/e1/b6b9defefd8d5e5896993ec6be5dafeb3e5c44da6db1b60d671553d8a618/deltachat_rpc_server-2.49.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.musllinux_1_1_x86_64.whl", hash = "sha256:2aa8f41aebe7a502bd30e72f8009a199f4f91948deffcfab90b71c5dbbee9691", size = 11745522, upload-time = "2026-04-13T09:11:26.426Z" },
+    { url = "https://files.pythonhosted.org/packages/df/e9/ca3978f05a4edb450da387275fa0401bd26f80d22e339b0b7e0107ab76ea/deltachat_rpc_server-2.49.0-py3-none-win32.whl", hash = "sha256:a80cb2171685060d7c48f90013ecf5e0239fa5b1b6c3598c37d593903438a4d9", size = 10527871, upload-time = "2026-04-13T09:11:29.359Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/d3/3eb5b1ad0dd193288ced6ac44b9d3741768b17ffdca8cc13bd53cc994802/deltachat_rpc_server-2.49.0-py3-none-win_amd64.whl", hash = "sha256:324e480f201a9477b045571aa9baf08ee07b5eb53ef7ae3b64efb689efa124fd", size = 10546684, upload-time = "2026-04-13T09:11:32.141Z" },
 ]
 
 [[package]]
@@ -771,8 +771,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "deltachat-rpc-client", specifier = "==2.40.0" },
-    { name = "deltachat-rpc-server", specifier = "==2.40.0" },
+    { name = "deltachat-rpc-client", specifier = "==2.49.0" },
+    { name = "deltachat-rpc-server", specifier = "==2.49.0" },
     { name = "pickledb", specifier = "==0.9" },
     { name = "pyinfra", marker = "extra == 'all'" },
     { name = "pyinfra", marker = "extra == 'deploy'" },

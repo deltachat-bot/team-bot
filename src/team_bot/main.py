@@ -67,6 +67,9 @@ def run_bot(
                 kwargs={"email": email, "password": password},
             )
             configure_thread.start()
+        else:
+            if password:
+                log.warning("Password already configured, CLI argument has no effect")
         log.info("Start listening to messages with " + hooks.__name__)
         if until:
             client.run_until(until)

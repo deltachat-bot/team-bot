@@ -11,6 +11,7 @@ from .commands import (
     set_avatar,
     set_display_name,
     set_outside_help,
+    set_prefix,
     start_chat,
 )
 from .forwarding import forward_to_outside, forward_to_relay_group, reply
@@ -93,7 +94,7 @@ def handle_msg_in_crew_chat(msg: AttrDict):
 
     if msg.text.startswith("/"):
         log.debug(f"handling command by {msg.sender.get_snapshot().name_and_addr}: {msg.text}")
-        arguments = msg.text.split(" ")
+        arguments = msg.text.split()
         if arguments[0] == "/help":
             reply(msg.chat, crew_help(), quote=msg.message)
         if arguments[0] == "/set_name":
@@ -115,6 +116,9 @@ def handle_msg_in_crew_chat(msg: AttrDict):
             reply(msg.chat, result, quote=msg.message)
         if arguments[0] == "/add_contact":
             message = add_contact(account, msg)
+            reply(msg.chat, message, quote=msg.message)
+        if arguments[0] == "/set_prefix":
+            message = set_prefix(account, arguments)
             reply(msg.chat, message, quote=msg.message)
         if arguments[0] == "/set_outside_help":
             try:

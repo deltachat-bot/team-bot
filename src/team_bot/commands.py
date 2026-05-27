@@ -7,7 +7,7 @@ from deltachat_rpc_client import Account, Chat, DeltaChat, Message, Rpc
 from deltachat_rpc_client._utils import AttrDict
 from deltachat_rpc_client.rpc import JsonRpcError
 
-from .util import get_relay_groups, parse_new_command_args, set_relay_groups
+from .util import get_prefix, get_relay_groups, parse_new_command_args, set_relay_groups
 
 log = logging.getLogger("root")
 
@@ -62,10 +62,11 @@ def crew_help() -> str:
     """
     help_text = """
 Start a chat:\t/new_message alice@example.org,bob@example.org Chat_Title Hello friends!
-Add a contact:\t/add_contact (you need to attach a contact)
+Add a contact:\t\t\t/add_contact <attach contact>
 Change the bot's name:\t/set_name Name
 Change the bot's avatar:\t/set_avatar <attach image>
 Generate invite link:\t\t/generate_invite
+Set relay group prefix:\t\t/set_prefix [example]
 Show this help text:\t\t/help
 Change the help message for outsiders:\t/set_outside_help Hello outsider
     """
@@ -102,6 +103,36 @@ def set_avatar(account: Account, message: AttrDict, crew: Chat) -> str:
     account.set_avatar(message.file)
     crew.set_image(message.file)
     return "Avatar changed to this image."
+
+
+def set_prefix(account: Account, arguments: [str]) -> str:
+    """Set the prefix for relay groups.
+
+    :param account: the account object of the bot
+    :param arguments: the arguments of the original command
+    :return: a success/failure message
+    """
+    old_prefix = get_prefix(account)
+    arguments.pop(0)
+    new_prefix = " ".join(arguments)
+    account.set_config("ui.prefix", new_prefix)
+    changed_titles = 0
+    for _, relay_group_id in get_relay_groups(account):
+        relay_group = account.get_chat_by_id(relay_group_id)
+        old_title = relay_group.get_basic_snapshot().name
+        if old_title.startswith(old_prefix):
+            new_title = new_prefix + " " + old_title[len(old_prefix) :].strip()
+        else:
+            log.warning(f"Setting prefix: {old_title} does not start with {old_prefix}")
+            new_title = new_prefix + " " + old_title.strip()
+        relay_group.set_name(new_title.strip())
+        changed_titles += 1
+    if new_prefix:
+        changed_prefix = f"Set prefix to {new_prefix}"
+    else:
+        changed_prefix = "Removed prefix"
+    ending = "s" if changed_titles > 1 else ""
+    return f"{changed_prefix}, changed {changed_titles} relay group name{ending}."
 
 
 def start_chat(

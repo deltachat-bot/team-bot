@@ -3,7 +3,14 @@ import logging
 from deltachat_rpc_client import Chat, Message
 from deltachat_rpc_client._utils import AttrDict
 
-from .util import get_crew_id_from_account, get_outside_chat, get_relay_group, get_relay_groups, set_relay_groups
+from .util import (
+    get_crew_id_from_account,
+    get_outside_chat,
+    get_prefix,
+    get_relay_group,
+    get_relay_groups,
+    set_relay_groups,
+)
 
 log = logging.getLogger("root")
 
@@ -57,10 +64,7 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
 
     relay_group = get_relay_group(msg.chat)
     if not relay_group:
-        group_name = "[%s] %s" % (
-            account.get_config("addr").split("@")[0],
-            msg.chat.get_full_snapshot().name,
-        )
+        group_name = get_prefix(account) + " " + msg.chat.get_full_snapshot().name
         log.info(f"Creating new relay group: {group_name}")
         relay_group = account.create_group(group_name)
         for member in crew_members:

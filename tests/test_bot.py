@@ -169,7 +169,7 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
             assert "This is the relay group for" not in msg.get_snapshot().text
 
 
-@pytest.mark.timeout(TIMEOUT)
+@pytest.mark.timeout(TIMEOUT * 2)
 def test_relay_outside_group(crew, bot, crew_member, outsider, log):
     log.step("send message to bot")
     bot_invite = bot.account.get_qr_code()
@@ -180,7 +180,8 @@ def test_relay_outside_group(crew, bot, crew_member, outsider, log):
     group_title = "Fancy group"
     outsider_outside_group = outsider.create_group(group_title)
     outsider_outside_group.add_contact(outsider_botcontact)
-    outsider_outside_group.send_text("Group message by outsider")
+    outsider_text = "Group message by outsider"
+    outsider_outside_group.send_text(outsider_text)
     log.step("receive group message with bot, create relay group")
     ev = bot._process_events(until_event=EventType.INCOMING_MSG)
     group_msg_from_outsider = bot.account.get_message_by_id(ev.msg_id).get_snapshot()
@@ -188,7 +189,10 @@ def test_relay_outside_group(crew, bot, crew_member, outsider, log):
     assert not is_relay_group(bot_outside_chat)
 
     log.step("receive group message in relay group")
+    explanation_message = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert explanation_message.text.startswith("This is a chat with Outsider")
     user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert user_forwarded_message_from_outsider.text == outsider_text
     user_relay_group = user_forwarded_message_from_outsider.chat
     log.step("check if relay group has relay group properties")
     assert user_relay_group.get_full_snapshot().name.startswith(
@@ -198,6 +202,26 @@ def test_relay_outside_group(crew, bot, crew_member, outsider, log):
     crew_members = set(c.get_snapshot().address for c in crew.chat.get_contacts())
     relay_group_members = set(c.get_snapshot().address for c in user_relay_group.get_contacts())
     assert crew_members == relay_group_members
+
+    log.step("set relay group prefix empty")
+    crew.chat.send_text("/set_prefix")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    relay_group_name_changed = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert relay_group_name_changed.text.startswith("Group name changed from")
+    assert user_relay_group.get_full_snapshot().name == group_title
+    set_prefix_empty_sucess = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert set_prefix_empty_sucess.text.startswith("Removed prefix")
+    assert "changed 1 relay group name." in set_prefix_empty_sucess.text
+
+    log.step("set new relay group prefix")
+    new_prefix = "[new prefix]"
+    crew.chat.send_text(f"/set_prefix {new_prefix}  ")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    relay_group_name_changed = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert relay_group_name_changed.text.startswith("Group name changed from")
+    assert user_relay_group.get_full_snapshot().name == new_prefix + " " + group_title
+    set_prefix_empty_sucess = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert set_prefix_empty_sucess.text == f"Set prefix to {new_prefix}, changed 1 relay group name."
 
     log.step("send direct reply, should be forwarded")
     outside_group_reply = user_relay_group.send_message(

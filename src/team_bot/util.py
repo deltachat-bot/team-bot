@@ -36,7 +36,7 @@ def set_relay_groups(account: Account, mappings: [(int, int)]):
 
 
 def get_relay_groups(account: Account) -> [(int, int)]:
-    """Get a list of all relay groups"""
+    """Get a list of all (outside chat, relay group) mappings"""
     relay_json = account.get_config("ui.relay_groups")
     return json.loads(relay_json)
 
@@ -62,6 +62,13 @@ def get_outside_chat(relay_group: Chat) -> Chat:
     for mapping in get_relay_groups(relay_group.account):
         if mapping[1] == relay_group.id:
             return relay_group.account.get_chat_by_id(mapping[0])
+
+
+def get_prefix(account: Account) -> str:
+    prefix = account.get_config("ui.prefix")
+    if prefix is None:
+        prefix = f"[{account.get_config('addr').split('@')[0]}]"
+    return prefix
 
 
 def parse_new_command_args(command_text: str) -> ([str], str, str):

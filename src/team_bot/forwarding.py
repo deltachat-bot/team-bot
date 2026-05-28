@@ -55,7 +55,7 @@ def forward_to_outside(msg: AttrDict):
 
 
 def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
-    """Forward a message to a relay group, create it if it doesn't yet exist."""
+    """Forward a message from an outside to a relay group, create it if it doesn't yet exist."""
     account = msg.chat.account
     crew_id = get_crew_id_from_account(account)
     crew = account.get_chat_by_id(crew_id)

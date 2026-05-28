@@ -6,13 +6,17 @@ from deltachat_rpc_client._utils import AttrDict
 from .commands import (
     add_contact,
     crew_help,
+    mute_relay_group,
     offboard,
     outside_help,
+    relay_group_help,
+    resend_missed_messages,
     set_avatar,
     set_display_name,
     set_outside_help,
     set_prefix,
     start_chat,
+    unmute_relay_group,
 )
 from .forwarding import forward_to_outside, forward_to_relay_group, reply
 from .util import (
@@ -93,7 +97,7 @@ def handle_msg_in_crew_chat(msg: AttrDict):
     account = msg.chat.account
 
     if msg.text.startswith("/"):
-        log.debug(f"handling command by {msg.sender.get_snapshot().name_and_addr}: {msg.text}")
+        log.debug(f"handling Team Chat command by {msg.sender.get_snapshot().name_and_addr}: {msg.text}")
         arguments = msg.text.split()
         if arguments[0] == "/help":
             reply(msg.chat, crew_help(), quote=msg.message)
@@ -134,7 +138,23 @@ def handle_msg_in_crew_chat(msg: AttrDict):
 
 def handle_msg_in_relay_group(msg: AttrDict):
     account = msg.chat.account
-    if msg.quote:
+    if msg.text.startswith("/"):
+        log.debug(f"handling Relay Group command by {msg.sender.get_snapshot().name_and_addr}: {msg.text}")
+        arguments = msg.text.split()
+        if arguments[0] == "/help":
+            reply(msg.chat, relay_group_help(), quote=msg.message)
+        if arguments[0] == "/spam" or arguments[0] == "/mute":
+            if mute_relay_group(msg.chat):
+                reply(msg.chat, "Ignoring chat in the future.", quote=msg.message)
+            else:
+                reply(msg.chat, "Chat is already muted.", quote=msg.message)
+        if arguments[0] == "/unmute":
+            if unmute_relay_group(msg.chat):
+                reply(msg.chat, "Receiving messages again:", quote=msg.message)
+                resend_missed_messages(msg.chat)
+            else:
+                reply(msg.chat, "Chat is not muted anyway.", quote=msg.message)
+    elif msg.quote:
         quoted_msg = account.get_message_by_id(msg.quote.message_id).get_snapshot()
         if quoted_msg.sender == account.self_contact:
             if not msg.quote.text.startswith("This is the relay group for"):
@@ -167,6 +187,9 @@ def handle_msg_in_outside_chat(msg: AttrDict):
                 help_message,
             )
             return reply(msg.chat, help_message, quote=msg.message)
+    if msg.chat.get_basic_snapshot().is_muted:
+        log.debug(f"Ignoring message in muted outside chat {msg.chat_id}")
+        return
     log.debug("Forwarding message to relay group")
     forward_to_relay_group(msg)
 
@@ -181,6 +204,9 @@ def handle_info_msg(msg: AttrDict, crew_id: int):
     if get_outside_chat(msg.chat):
         log.debug(f"Ignoring system message in the relay group {msg.chat_id}")
     else:
+        if msg.chat.get_basic_snapshot().is_muted:
+            log.debug(f"Ignoring message in muted outside chat {msg.chat_id}")
+            return
         log.debug(f"This is a system message in the outside chat {msg.chat_id}")
         relay_group = get_relay_group(msg.chat)
         if "image changed by" in msg.text:

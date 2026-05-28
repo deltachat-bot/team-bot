@@ -147,6 +147,14 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     assert bot_chatter_in_relay_group.text not in [msg.get_snapshot().text for msg in bot_outside_chat.get_messages()]
     assert not bot_chatter_in_relay_group.reactions
 
+    log.step("send /mute to relay group")
+    user_relay_group.send_text("/mute")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    assert bot_outside_chat.get_basic_snapshot().is_muted
+    log.step("receive confirmation message")
+    user_mute_success = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert user_mute_success.text == "Ignoring chat in the future."
+
     log.step("outsider sets avatar")
     example_png_path = "/usr/share/pixmaps/debian-logo.png"
     if not os.path.exists(example_png_path):
@@ -155,10 +163,17 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
 
     log.step("reply with outsider")
     outsider_outside_chat.send_text("Second message by outsider")
-    log.step("forward with bot")
+    log.step("make sure outsider's reply didn't arrive yet")
     bot._process_events(until_event=EventType.INCOMING_MSG)
 
-    log.step("check that outsider's reply ends up in the same chat")
+    log.step("/unmute relay group, re-forward missed messages")
+    user_relay_group.send_text("/unmute")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    log.step("receive confirmation message")
+    user_unmute_success = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert user_unmute_success.text == "Receiving messages again:"
+
+    log.step("check that outsider's resent reply ends up in the same chat")
     user_second_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
     assert user_second_message_from_outsider.chat == user_relay_group
     assert user_relay_group.get_full_snapshot().profile_image

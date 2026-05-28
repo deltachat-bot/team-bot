@@ -7,7 +7,8 @@ from deltachat_rpc_client import Account, Chat, DeltaChat, Message, Rpc
 from deltachat_rpc_client._utils import AttrDict
 from deltachat_rpc_client.rpc import JsonRpcError
 
-from .util import get_prefix, get_relay_groups, parse_new_command_args, set_relay_groups
+from .forwarding import forward_to_relay_group
+from .util import get_outside_chat, get_prefix, get_relay_groups, parse_new_command_args, set_relay_groups
 
 log = logging.getLogger("root")
 
@@ -73,6 +74,16 @@ Change the help message for outsiders:\t/set_outside_help Hello outsider
     return help_text
 
 
+def relay_group_help():
+    """Get the help message for relay groups"""
+    help_text = """
+Ignore future messages:\t/mute
+Get messages again:\t\t/unmute
+Show this help text:\t\t/help
+    """
+    return help_text
+
+
 def outside_help(account: Account) -> str:
     """Get the help message for outsiders"""
     return account.get_config("ui.outside_help_message")
@@ -82,6 +93,40 @@ def set_outside_help(account: Account, help_message: str):
     """Set the help message for outsiders"""
     logging.info("Setting outside_help_message to %s", help_message)
     account.set_config("ui.outside_help_message", help_message)
+
+
+def mute_relay_group(relay_group: Chat) -> bool:
+    """Mute the outside chat of a relay group, so future messages from the outside will not be forwarded.
+
+    :return: whether the command made a difference
+    """
+    outside_chat = get_outside_chat(relay_group)
+    if not outside_chat.get_basic_snapshot().is_muted:
+        outside_chat.mute()
+        return True
+    else:
+        return False
+
+
+def unmute_relay_group(relay_group: Chat) -> bool:
+    """Unmute the outside chat of this relay group again.
+
+    :return: whether the command made a difference
+    """
+    outside_chat = get_outside_chat(relay_group)
+    if outside_chat.get_basic_snapshot().is_muted:
+        outside_chat.unmute()
+        return True
+    else:
+        return False
+
+
+def resend_missed_messages(relay_group: Chat):
+    """Forward messages to the relay group which were not forwarded yet."""
+    existing_relay_group_messages = [msg.get_snapshot().text for msg in relay_group.get_messages()]
+    for msg in get_outside_chat(relay_group).get_messages():
+        if msg.get_snapshot().text not in existing_relay_group_messages:
+            forward_to_relay_group(msg.get_snapshot())
 
 
 def set_display_name(account: Account, display_name: str) -> str:
@@ -119,6 +164,8 @@ def set_prefix(account: Account, arguments: [str]) -> str:
     changed_titles = 0
     for _, relay_group_id in get_relay_groups(account):
         relay_group = account.get_chat_by_id(relay_group_id)
+        if get_outside_chat(relay_group).get_basic_snapshot().is_muted:
+            continue
         old_title = relay_group.get_basic_snapshot().name
         if old_title.startswith(old_prefix):
             new_title = new_prefix + " " + old_title[len(old_prefix) :].strip()

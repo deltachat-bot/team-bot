@@ -53,3 +53,29 @@ def outsider(acfactory, log):
     outsider = acfactory.get_online_account()
     outsider.set_config("displayname", "Outsider for TEST team")
     return outsider
+
+
+def join_chat(user, invite, log):
+    user.secure_join(invite)
+    user.wait_for_securejoin_joiner_success()
+    log.step("Joiner receives member_added message")
+    [print(chat.get_full_snapshot().name) for chat in user.get_chatlist()]
+    return user.get_chatlist()[0]
+
+
+@pytest.fixture
+def relay_group(crew, bot, outsider, crew_member, log):
+    log.step("send message to bot")
+    bot_invite = bot.account.get_qr_code()
+    outsider_outside_chat = join_chat(outsider, bot_invite, log)
+    outsider_outside_chat.send_text("test 1:1 message to bot")
+
+    log.step("bot creates relay group")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+
+    log.step("get relay group")
+    group_explanation_message = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert "This is a chat with Outsider for TEST team" in group_explanation_message.text
+    user_forwarded_message_from_outsider = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert user_forwarded_message_from_outsider.text == "test 1:1 message to bot"
+    return user_forwarded_message_from_outsider.chat

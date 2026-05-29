@@ -92,6 +92,42 @@ def test_not_relay_groups(crew, bot, crew_member, outsider, log):
     assert not is_relay_group(bot_message_from_user.chat)
 
 
+def test_relay_timer(relay_group, bot, crew_member, outsider, log):
+    log.step("Timer is off, send /timer")
+    relay_group.send_text("/timer")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    bot_reply = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert bot_reply.text == "The disappearing messages timer is already disabled."
+
+    log.step("Timer is off, send /timer 10s")
+    relay_group.send_text("/timer 10s")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    bot_reply = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert bot_reply.text == "Disappearing messages timer is now 10s."
+
+    log.step("Check that outsider has 10 seconds, too")
+    timer_10s = outsider.wait_for_incoming_msg().get_snapshot()
+    assert timer_10s.text == "Message deletion timer is set to 10 s by Bot from TEST team."
+    assert timer_10s.chat.get_full_snapshot().ephemeral_timer == 10
+
+    log.step("Timer is 10s, send /timer 10s")
+    relay_group.send_text("/timer 10s")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    bot_reply = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert bot_reply.text == "The disappearing messages timer is already 10s."
+
+    log.step("Timer is 10s, send /timer 0")
+    relay_group.send_text("/timer 0")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    bot_reply = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert bot_reply.text == "Disappearing messages timer is now disabled."
+
+    log.step("Check that outsider sees disabled, too")
+    timer_disabled = outsider.wait_for_incoming_msg().get_snapshot()
+    assert timer_disabled.text == "Message deletion timer is disabled by Bot from TEST team."
+    assert timer_disabled.chat.get_full_snapshot().ephemeral_timer == 0
+
+
 @pytest.mark.timeout(TIMEOUT)
 def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     log.step("send message to bot")

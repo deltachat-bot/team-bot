@@ -145,7 +145,8 @@ def handle_msg_in_relay_group(msg: AttrDict):
             reply(msg.chat, relay_group_help(), quote=msg.message)
         if arguments[0] == "/spam" or arguments[0] == "/mute":
             if mute_relay_group(msg.chat):
-                reply(msg.chat, "Ignoring chat in the future.", quote=msg.message)
+                if arguments[0] != "/spam":  # workaround for some other automation
+                    reply(msg.chat, "Ignoring chat in the future.", quote=msg.message)
             else:
                 reply(msg.chat, "Chat is already muted.", quote=msg.message)
         if arguments[0] == "/unmute":

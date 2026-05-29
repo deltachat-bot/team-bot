@@ -13,6 +13,7 @@ from .commands import (
     resend_missed_messages,
     set_avatar,
     set_display_name,
+    set_ephemeral_timer,
     set_outside_help,
     set_prefix,
     start_chat,
@@ -143,6 +144,13 @@ def handle_msg_in_relay_group(msg: AttrDict):
         arguments = msg.text.split()
         if arguments[0] == "/help":
             reply(msg.chat, relay_group_help(), quote=msg.message)
+        if arguments[0] == "/timer":
+            if len(arguments) < 2:
+                human_readable_duration = "0"
+            else:
+                human_readable_duration = arguments[1]
+            result = set_ephemeral_timer(msg.chat, human_readable_duration)
+            reply(msg.chat, result, quote=msg.message)
         if arguments[0] == "/spam" or arguments[0] == "/mute":
             if mute_relay_group(msg.chat):
                 if arguments[0] != "/spam":  # workaround for some other automation

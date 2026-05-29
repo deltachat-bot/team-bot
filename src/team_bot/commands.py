@@ -8,7 +8,14 @@ from deltachat_rpc_client._utils import AttrDict
 from deltachat_rpc_client.rpc import JsonRpcError
 
 from .forwarding import forward_to_relay_group
-from .util import get_outside_chat, get_prefix, get_relay_groups, parse_new_command_args, set_relay_groups
+from .util import (
+    get_outside_chat,
+    get_prefix,
+    get_relay_groups,
+    parse_duration,
+    parse_new_command_args,
+    set_relay_groups,
+)
 
 log = logging.getLogger("root")
 
@@ -77,6 +84,7 @@ Change the help message for outsiders:\t/set_outside_help Hello outsider
 def relay_group_help():
     """Get the help message for relay groups"""
     help_text = """
+Disappearing messages:\t/timer 7d
 Ignore future messages:\t/mute
 Get messages again:\t\t/unmute
 Show this help text:\t\t/help
@@ -93,6 +101,25 @@ def set_outside_help(account: Account, help_message: str):
     """Set the help message for outsiders"""
     logging.info("Setting outside_help_message to %s", help_message)
     account.set_config("ui.outside_help_message", help_message)
+
+
+def set_ephemeral_timer(relay_group: Chat, human_readable: str) -> str:
+    """In the outside chat to this relay group, set an ephemeral timer.
+
+    :param relay_group: the relay group in which the command was sent
+    :param human_readable: the human-readable duration, e.g. 7d, 3w, 30m, 10s.
+    :return: a success/failure message to reply to the chat.
+    """
+    try:
+        timer_seconds = parse_duration(human_readable)
+    except ValueError:
+        return f"{human_readable} is not a valid duration, try 7d, 4w, or 30m."
+    outside_chat = get_outside_chat(relay_group)
+    result = "disabled" if human_readable == "0" else human_readable
+    if outside_chat.get_full_snapshot().ephemeral_timer == timer_seconds:
+        return f"The disappearing messages timer is already {result}."
+    outside_chat.set_ephemeral_timer(timer_seconds)
+    return f"Disappearing messages timer is now {result}."
 
 
 def mute_relay_group(relay_group: Chat) -> bool:

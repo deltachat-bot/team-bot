@@ -71,6 +71,30 @@ def get_prefix(account: Account) -> str:
     return prefix
 
 
+def parse_duration(human_readable: str) -> int:
+    """Parse a human readable duration.
+
+    :param: human_readable: the duration with a unit: e.g. 7d, 3w, 30m, 10s
+    :return: how many seconds the duration lasts.
+    """
+    match human_readable[-1]:
+        case "w":
+            seconds = int(human_readable.rstrip("w")) * 60 * 60 * 24 * 7
+        case "d":
+            seconds = int(human_readable.rstrip("d")) * 60 * 60 * 24
+        case "h":
+            seconds = int(human_readable.rstrip("h")) * 60 * 60
+        case "m":
+            seconds = int(human_readable.rstrip("m")) * 60
+        case "s":
+            seconds = int(human_readable.rstrip("s"))
+        case _:
+            seconds = int(human_readable)
+    if seconds < 0:
+        raise ValueError
+    return seconds
+
+
 def parse_new_command_args(command_text: str) -> ([str], str, str):
     """Parse a /new_command message to get recipients, title, and text out of it.
 

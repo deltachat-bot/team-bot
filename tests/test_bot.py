@@ -4,7 +4,13 @@ import pytest
 from deltachat_rpc_client import EventType
 from deltachat_rpc_client.const import MessageState
 
-from team_bot.util import get_crew_id_from_account, get_relay_groups, is_relay_group, parse_new_command_args
+from team_bot.util import (
+    get_crew_id_from_account,
+    get_group_creation_msg,
+    get_relay_groups,
+    is_relay_group,
+    parse_new_command_args,
+)
 
 TIMEOUT = 40
 ALICE_VCARD = """BEGIN:VCARD
@@ -21,7 +27,6 @@ def join_chat(user, invite, log):
     user.secure_join(invite)
     user.wait_for_securejoin_joiner_success()
     log.step("Joiner receives member_added message")
-    [print(chat.get_full_snapshot().name) for chat in user.get_chatlist()]
     return user.get_chatlist()[0]
 
 
@@ -126,6 +131,40 @@ def test_relay_timer(relay_group, bot, crew_member, outsider, log):
     timer_disabled = outsider.wait_for_incoming_msg().get_snapshot()
     assert timer_disabled.text == "Message deletion timer is disabled by Bot from TEST team."
     assert timer_disabled.chat.get_full_snapshot().ephemeral_timer == 0
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_group_creation_reply_no_quote(relay_group, bot, outsider, log):
+    log.step("reply to group creation message")
+    group_creation_msg = relay_group.get_messages()[1]
+    text = "This should be forwarded without quote"
+    relay_group.send_message(text, quoted_msg=group_creation_msg)
+
+    log.step("bot processes reply")
+    ev = bot._process_events(until_event=EventType.INCOMING_MSG)
+    bot_reply = bot.account.get_message_by_id(ev.msg_id).get_snapshot()
+    assert bot_reply.text == text
+    assert bot_reply.quote.message_id == get_group_creation_msg(bot_reply.chat).get_snapshot().id
+
+    log.step("outsider receives forwarded reply")
+    outsider_reply = outsider.wait_for_incoming_msg().get_snapshot()
+    assert outsider_reply.text == text
+    assert not outsider_reply.quote
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_add_outsider_to_relay_group(relay_group, bot, outsider, log):
+    log.step("adding outsider to relay group")
+    relay_group.add_contact(outsider)
+
+    log.step("bot resends group creation message")
+    bot._process_events(until_event=EventType.INCOMING_MSG)  # waiting for CHAT_MODIFIED somehow wasn't enough
+
+    log.step("outsider receives group creation message")
+    member_added = outsider.wait_for_incoming_msg().get_snapshot()
+    assert member_added.text == "Member Me added by Crew member from TEST team."
+    group_creation_msg = outsider.wait_for_incoming_msg().get_snapshot()
+    assert "This is a chat with " in group_creation_msg.text
 
 
 @pytest.mark.timeout(TIMEOUT)

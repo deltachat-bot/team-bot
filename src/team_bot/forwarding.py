@@ -5,6 +5,7 @@ from deltachat_rpc_client._utils import AttrDict
 
 from .util import (
     get_crew_id_from_account,
+    get_group_creation_msg,
     get_outside_chat,
     get_prefix,
     get_relay_group,
@@ -34,10 +35,10 @@ def forward_to_outside(msg: AttrDict):
         )
         return
     try:
-        if msg.quote:
-            quoted_msg = msg.quote.message_id
-        else:
+        if msg.quote.message_id == get_group_creation_msg(msg.chat).id:
             quoted_msg = None
+        else:
+            quoted_msg = msg.quote.message_id
         if not msg.has_html:
             msg.html = None
         outside_chat.send_message(
@@ -82,7 +83,7 @@ def forward_to_relay_group(msg: AttrDict, started_by_crew: bool = False):
         if started_by_crew:
             explanation = f"We sent a message to {recipients}.\n\nThis was our first message:"
         else:
-            explanation = f"This is a chat with {recipients}; Only *replies* will be visible to the outside."
+            explanation = f"This is a chat with {recipients}. Reply to my messages; I'll forward your replies outside."
         relay_group.send_text(explanation)
         relay_mappings = get_relay_groups(account)
         relay_mappings.append(tuple([msg.chat.id, relay_group.id]))

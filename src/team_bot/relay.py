@@ -23,8 +23,10 @@ from .forwarding import forward_to_outside, forward_to_relay_group, reply
 from .util import (
     find_original_message,
     get_crew_id_from_account,
+    get_group_creation_msg,
     get_outside_chat,
     get_relay_group,
+    get_relay_groups,
     is_relay_group,
 )
 
@@ -72,6 +74,10 @@ def member_added_or_removed(event):
         log.info("crew member %s was %s" % (event.member, change))
         if not event.member_added:
             offboard(msg, event.member)
+    if msg.chat_id in [relay_group for _, relay_group in get_relay_groups(account)]:
+        if event.member_added:
+            log.info("%s was added to relay group %s, resending group creation message" % (event.member, msg.chat_id))
+            get_group_creation_msg(msg.chat).resend()
 
 
 @relayhooks.on(events.NewMessage)
@@ -166,11 +172,8 @@ def handle_msg_in_relay_group(msg: AttrDict):
     elif msg.quote:
         quoted_msg = account.get_message_by_id(msg.quote.message_id).get_snapshot()
         if quoted_msg.sender == account.self_contact:
-            if not msg.quote.text.startswith("This is the relay group for"):
-                log.debug("Forwarding message to outsider")
-                forward_to_outside(msg)
-            else:
-                log.debug("Ignoring reply to the group creation message")
+            log.debug("Forwarding message to outsider")
+            forward_to_outside(msg)
         else:
             log.debug("Ignoring message, just the crew chatting")
     else:

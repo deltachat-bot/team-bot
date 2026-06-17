@@ -1,6 +1,6 @@
 import pytest
 
-from team_bot.util import parse_duration
+from team_bot.util import get_group_creation_msg, parse_duration
 
 
 @pytest.mark.parametrize(
@@ -26,3 +26,10 @@ def test_parse_duration(human_readable, seconds):
             parse_duration(human_readable)
     else:
         assert parse_duration(human_readable) == seconds
+
+
+def test_get_group_creation_msg(relay_group, bot):
+    for chat in bot.account.get_chatlist():
+        if chat.get_basic_snapshot().name == relay_group.get_basic_snapshot().name:
+            text = get_group_creation_msg(chat).get_snapshot().text
+    assert text.startswith("This is a chat with ")

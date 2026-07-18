@@ -1,4 +1,4 @@
-import os.path
+from pathlib import Path
 
 import pytest
 from deltachat_rpc_client import EventType
@@ -21,6 +21,11 @@ KEY:data:application/pgp-keys;base64,xjMEaAVqNxYJKwYBBAHaRw8BAQdAnQ1KcTZYpcfbGyX
 REV:20250420T214624Z
 END:VCARD
 """
+
+
+@pytest.fixture()
+def avatar_filename() -> str:
+    return str(Path(__file__).parent / "avatar.png")
 
 
 def join_chat(user, invite, log):
@@ -168,7 +173,7 @@ def test_add_outsider_to_relay_group(relay_group, bot, outsider, log):
 
 
 @pytest.mark.timeout(TIMEOUT)
-def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
+def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log, avatar_filename):
     log.step("send message to bot")
     bot_invite = bot.account.get_qr_code()
     outsider_outside_chat = join_chat(outsider, bot_invite, log)
@@ -231,10 +236,7 @@ def test_relay_outside_1on1_chats(crew, bot, crew_member, outsider, log):
     assert user_mute_success.text == "Ignoring chat in the future."
 
     log.step("outsider sets avatar")
-    example_png_path = "/usr/share/pixmaps/debian-logo.png"
-    if not os.path.exists(example_png_path):
-        pytest.skip(f"example image not available: {example_png_path}")
-    outsider.set_avatar(example_png_path)
+    outsider.set_avatar(avatar_filename)
 
     log.step("reply with outsider")
     outsider_outside_chat.send_text("Second message by outsider")
@@ -467,7 +469,7 @@ def test_changed_outside_help(crew, bot, crew_member, outsider, log):
 
 
 @pytest.mark.timeout(TIMEOUT)
-def test_change_avatar(crew, bot, crew_member, log):
+def test_change_avatar(crew, bot, crew_member, log, avatar_filename):
     for contact in crew_member.get_contacts():
         if contact.get_snapshot().address == bot.account.get_config("addr"):
             botcontact = contact
@@ -476,12 +478,8 @@ def test_change_avatar(crew, bot, crew_member, log):
     else:
         pytest.fail("bot contact not found")
 
-    example_png_path = "/usr/share/pixmaps/debian-logo.png"
-    if not os.path.exists(example_png_path):
-        pytest.skip(f"example image not available: {example_png_path}")
-
     log.step("set avatar to example image")
-    crew.chat.send_message(text="/set_avatar", file=example_png_path)
+    crew.chat.send_message(text="/set_avatar", file=avatar_filename)
     bot._process_events(until_event=EventType.INCOMING_MSG)
     group_avatar_changed_msg = crew_member.wait_for_incoming_msg().get_snapshot()
     assert "Group image changed" in group_avatar_changed_msg.text

@@ -68,7 +68,7 @@ def get_group_creation_msg(relay_group: Chat) -> Optional[Message | None]:
     """For a relay group, return the snapshot of the group creation message."""
     beginnings = ["This is a chat with ", "We sent a message to", "This is the relay gr"]
     if is_relay_group(relay_group):
-        for msg in relay_group.get_messages():
+        for msg in relay_group.get_messages()[:2]:
             if msg.get_snapshot().text[:20] in beginnings:
                 return msg
 

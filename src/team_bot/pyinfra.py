@@ -25,6 +25,8 @@ def deploy_team_bot(
     git.config(
         key="rebase.autoStash",
         value="true",
+        _su_user=unix_user,
+        _use_su_login=True,
     )
     clone_repo = git.repo(
         name="Pull the team-bot repository",

@@ -66,10 +66,10 @@ def get_outside_chat(relay_group: Chat) -> Chat:
 
 def get_group_creation_msg(relay_group: Chat) -> Optional[Message | None]:
     """For a relay group, return the snapshot of the group creation message."""
-    beginnings = ["This is a chat with ", "We sent a message to ", "This is the relay group for "]
+    beginnings = ("This is a chat with ", "We sent a message to ", "This is the relay group for ")
     if is_relay_group(relay_group):
-        for msg in relay_group.get_messages()[:2]:
-            if any([msg.get_snapshot().text.startswith(beginning) for beginning in beginnings]):
+        for msg in relay_group.get_messages()[:3]:
+            if msg.get_snapshot().text.startswith(beginnings):
                 return msg
 
 

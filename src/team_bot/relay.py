@@ -19,6 +19,7 @@ from .commands import (
     start_chat,
     unmute_relay_group,
 )
+from .exception_notifier import with_exception_notification
 from .forwarding import forward_to_outside, forward_to_relay_group, reply
 from .util import (
     find_original_message,
@@ -36,6 +37,7 @@ relayhooks.__name__ = "Relay hooks"
 
 
 @relayhooks.on(events.RawEvent)
+@with_exception_notification
 def catch_events(event):
     """This is called on every raw event and can be used for any kind of event handling.
     Unfortunately deltachat-rpc-client doesn't offer high-level events for MSG_DELIVERED or SECUREJOIN_INVITER_PROGRESS
@@ -66,6 +68,7 @@ def catch_events(event):
 
 
 @relayhooks.on(events.MemberListChanged)
+@with_exception_notification
 def member_added_or_removed(event):
     msg = event.message_snapshot
     account = msg.chat.account
@@ -81,6 +84,7 @@ def member_added_or_removed(event):
 
 
 @relayhooks.on(events.NewMessage)
+@with_exception_notification
 def incoming_message(event):
     msg = event.message_snapshot
     log.debug(msg)

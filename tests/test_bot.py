@@ -4,6 +4,8 @@ import pytest
 from deltachat_rpc_client import EventType
 from deltachat_rpc_client.const import MessageState
 
+from team_bot import relay
+from team_bot.exception_notifier import exception_notifier
 from team_bot.util import (
     get_crew_id_from_account,
     get_group_creation_msg,
@@ -576,6 +578,41 @@ def test_new_message_success(crew, bot, crew_member, log, tmpdir, outsider):
     outsider_new_msg = outsider.wait_for_incoming_msg().get_snapshot()
     recipients, title, text = parse_new_command_args(new_message_command)
     assert outsider_new_msg.text == f"{title} {text}"
+
+
+@pytest.mark.timeout(TIMEOUT)
+def test_exception_notification(crew, bot, crew_member, log, monkeypatch):
+    log.step("bind the notifier's account (fixtures bypass run_bot) and reset the cooldown")
+    exception_notifier.set_account(bot.account)
+    exception_notifier._last_notification = 0.0
+
+    log.step("make a relay sub-handler raise")
+
+    def test_crash(msg):
+        raise ValueError("intentional test exception <test_crash> & co")
+
+    monkeypatch.setattr(relay, "handle_msg_in_crew_chat", test_crash)
+
+    log.step("crew member sends a message that triggers the exception")
+    crew.chat.send_text("please crash")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+
+    log.step("crew receives an HTML notification carrying the traceback")
+    notification = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert "Exception in incoming_message" in notification.text
+    assert "ValueError" in notification.text
+    assert notification.has_html
+    html_body = crew_member._rpc.get_message_html(crew_member.id, notification.id)
+    assert "<pre>" in html_body
+    assert "Traceback (most recent call last)" in html_body
+    assert "&lt;test_crash&gt;" in html_body
+
+    log.step("bot keeps running: process an incoming message")
+    notification.sender.create_chat().send_text("/help")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    help_reply = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert "Exception in" not in help_reply.text
+    assert help_reply.text
 
 
 @pytest.mark.timeout(TIMEOUT)

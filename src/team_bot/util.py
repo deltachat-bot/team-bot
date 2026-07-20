@@ -1,7 +1,6 @@
 import json
 import logging
 import re
-from typing import Optional
 
 from deltachat_rpc_client import Account, Chat, Message
 from deltachat_rpc_client._utils import AttrDict
@@ -9,12 +8,12 @@ from deltachat_rpc_client._utils import AttrDict
 log = logging.getLogger("root")
 
 
-def has_crew(event: AttrDict) -> Optional[bool]:
+def has_crew(event: AttrDict) -> bool | None:
     account = event.account
     return bool(get_crew_id_from_account(account))
 
 
-def get_crew_id_from_account(account: Account) -> Optional[int]:
+def get_crew_id_from_account(account: Account) -> int | None:
     crew_id = account.get_config("ui.crew_id")
     if crew_id:
         return int(crew_id)
@@ -64,12 +63,13 @@ def get_outside_chat(relay_group: Chat) -> Chat:
             return relay_group.account.get_chat_by_id(mapping[0])
 
 
-def get_group_creation_msg(relay_group: Chat) -> Optional[Message | None]:
+def get_group_creation_msg(relay_group: Chat) -> Message | None:
     """For a relay group, return the snapshot of the group creation message."""
+    beginnings = ("This is a chat with ", "We sent a message to ", "This is the relay group for ")
     if is_relay_group(relay_group):
-        msgs = relay_group.get_messages()
-        assert msgs[1].get_snapshot().text[:20] in ["This is a chat with ", "We sent a message to"]
-        return msgs[1]
+        for msg in relay_group.get_messages()[:3]:
+            if msg.get_snapshot().text.startswith(beginnings):
+                return msg
 
 
 def get_prefix(account: Account) -> str:

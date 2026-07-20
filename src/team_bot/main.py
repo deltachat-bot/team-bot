@@ -11,6 +11,7 @@ from deltachat_rpc_client._utils import AttrDict
 from deltachat_rpc_client.events import EventFilter
 
 from .commands import migrate_from_cffi
+from .exception_notifier import exception_notifier
 from .relay import relayhooks
 from .setup import setuphooks
 from .util import has_crew
@@ -52,6 +53,7 @@ def run_bot(
         account = accounts[0] if accounts else deltachat.add_account()
 
         client = Bot(account, hooks)
+        exception_notifier.set_account(account)
         client.logger.debug("Running deltachat core %s", core_version)
 
         if not client.is_configured():

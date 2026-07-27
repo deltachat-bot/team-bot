@@ -3,7 +3,7 @@ name = "team-bot"
 version = "2.49.0"
 description = "This bot connects your team to the outside and makes it addressable."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "deltachat-rpc-client==2.49.0",
     "deltachat-rpc-server==2.49.0",
@@ -60,7 +60,7 @@ envlist = ["lint","py"]
 
 [tool.tox.env_run_base]
 description = "Run tests under {base_python}"
-commands = [["pytest", "-vn4", "-rsXx {posargs}"]]
+commands = [["pytest", "-v", "-n4", "-rsXx {posargs}"]]
 deps = [
     "pytest",
     "pytest-env",

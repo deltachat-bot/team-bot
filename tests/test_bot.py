@@ -616,6 +616,36 @@ def test_exception_notification(crew, bot, crew_member, log, monkeypatch):
 
 
 @pytest.mark.timeout(TIMEOUT)
+def test_command_syntax_errors(crew, bot, crew_member, log):
+    log.step("crew member sends /set_name with no name")
+    crew.chat.send_text("/set_name")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    reply_msg = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert reply_msg.text == "Invalid syntax. Usage: /set_name <new bot name>"
+
+    log.step("crew member sends /new_message missing title and text")
+    crew.chat.send_text("/new_message alice@example.org")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    reply_msg = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert reply_msg.text == (
+        "Invalid syntax. Usage: /new_message alice@example.org,bob@example.org Chat_Title Hello friends!"
+    )
+
+    log.step("crew member sends /add_contact with no attachment")
+    crew.chat.send_text("/add_contact")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    reply_msg = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert reply_msg.text == "Please attach a vCard so the contact can be imported."
+
+    log.step("bot keeps running: none of the above went through the crash path")
+    crew.chat.send_text("/help")
+    bot._process_events(until_event=EventType.INCOMING_MSG)
+    help_reply = crew_member.wait_for_incoming_msg().get_snapshot()
+    assert "Exception in" not in help_reply.text
+    assert help_reply.text
+
+
+@pytest.mark.timeout(TIMEOUT)
 def test_public_invite(crew, bot, crew_member, outsider):
     crew.chat.send_text("/generate-invite")
     bot._process_events(until_event=EventType.INCOMING_MSG)

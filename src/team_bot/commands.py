@@ -273,6 +273,8 @@ def add_contact(account: Account, command: AttrDict) -> str:
     :param account: the bot's account object
     :param command: the AttrDict of the message which called this function
     """
+    if not command.file:
+        return "Please attach a vCard so the contact can be imported."
     with open(command.file, "r") as f:
         contacts = account.import_vcard(f.read())
     possible_recipients = ",".join([c.get_snapshot().address for c in contacts])

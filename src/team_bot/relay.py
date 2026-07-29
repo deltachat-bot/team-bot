@@ -107,44 +107,59 @@ def incoming_message(event):
 def handle_msg_in_crew_chat(msg: AttrDict):
     account = msg.chat.account
 
-    if msg.text.startswith("/"):
-        log.debug(f"handling Team Chat command by {msg.sender.get_snapshot().name_and_addr}: {msg.text}")
-        arguments = msg.text.split()
-        if arguments[0] == "/help":
+    if not msg.text.startswith("/"):
+        log.debug("Ignoring message, just the crew chatting")
+        return
+
+    log.debug(f"handling Team Chat command by {msg.sender.get_snapshot().name_and_addr}: {msg.text}")
+    arguments = msg.text.split()
+
+    match arguments:
+        case ["/help", *_]:
             reply(msg.chat, crew_help(), quote=msg.message)
-        if arguments[0] == "/set_name":
-            displayname = msg.text.split("/set_name ")[1]
-            reply(
-                msg.chat,
-                set_display_name(account, displayname),
-                quote=msg.message,
-            )
-        if arguments[0] == "/set_avatar":
+
+        case ["/set_name", *_] if len(arguments) > 1:
+            displayname = msg.text.split("/set_name ", 1)[1]
+            reply(msg.chat, set_display_name(account, displayname), quote=msg.message)
+        case ["/set_name"]:
+            reply(msg.chat, "Invalid syntax. Usage: /set_name <new bot name>", quote=msg.message)
+
+        case ["/set_avatar", *_]:
             result = set_avatar(account, msg, msg.chat)
             reply(msg.chat, result, quote=msg.message)
-        if arguments[0] == "/generate_invite" or arguments[0] == "/generate-invite":
+
+        case ["/generate_invite", *_] | ["/generate-invite", *_]:
             reply(msg.chat, account.get_qr_code(), quote=msg.message)
-        if arguments[0] == "/new_message":
-            message, result = start_chat(account, msg)
-            if "success" in result:
-                forward_to_relay_group(message.get_snapshot(), started_by_crew=True)
-            reply(msg.chat, result, quote=msg.message)
-        if arguments[0] == "/add_contact":
+
+        case ["/new_message", *_]:
+            try:
+                message, result = start_chat(account, msg)
+            except (IndexError, ValueError):
+                reply(
+                    msg.chat,
+                    "Invalid syntax. Usage: /new_message alice@example.org,bob@example.org Chat_Title Hello friends!",
+                    quote=msg.message,
+                )
+            else:
+                if "success" in result:
+                    forward_to_relay_group(message.get_snapshot(), started_by_crew=True)
+                reply(msg.chat, result, quote=msg.message)
+
+        case ["/add_contact", *_]:
             message = add_contact(account, msg)
             reply(msg.chat, message, quote=msg.message)
-        if arguments[0] == "/set_prefix":
+
+        case ["/set_prefix", *_]:
             message = set_prefix(account, arguments)
             reply(msg.chat, message, quote=msg.message)
-        if arguments[0] == "/set_outside_help":
-            try:
-                help_message = msg.text.split("/set_outside_help ")[1]
-            except IndexError:
-                set_outside_help(account, "")
-                return reply(msg.chat, "Removed help message for outsiders", quote=msg.message)
+
+        case ["/set_outside_help", *_] if len(arguments) > 1:
+            help_message = msg.text.split("/set_outside_help ", 1)[1]
             set_outside_help(account, help_message)
             reply(msg.chat, f"Set help message for outsiders to {help_message}", quote=msg.message)
-    else:
-        log.debug("Ignoring message, just the crew chatting")
+        case ["/set_outside_help"]:
+            set_outside_help(account, "")
+            reply(msg.chat, "Removed help message for outsiders", quote=msg.message)
 
 
 def handle_msg_in_relay_group(msg: AttrDict):
@@ -152,27 +167,31 @@ def handle_msg_in_relay_group(msg: AttrDict):
     if msg.text.startswith("/"):
         log.debug(f"handling Relay Group command by {msg.sender.get_snapshot().name_and_addr}: {msg.text}")
         arguments = msg.text.split()
-        if arguments[0] == "/help":
-            reply(msg.chat, relay_group_help(), quote=msg.message)
-        if arguments[0] == "/timer":
-            if len(arguments) < 2:
-                human_readable_duration = "0"
-            else:
-                human_readable_duration = arguments[1]
-            result = set_ephemeral_timer(msg.chat, human_readable_duration)
-            reply(msg.chat, result, quote=msg.message)
-        if arguments[0] == "/spam" or arguments[0] == "/mute":
-            if mute_relay_group(msg.chat):
-                if arguments[0] != "/spam":  # workaround for some other automation
-                    reply(msg.chat, "Ignoring chat in the future.", quote=msg.message)
-            else:
-                reply(msg.chat, "Chat is already muted.", quote=msg.message)
-        if arguments[0] == "/unmute":
-            if unmute_relay_group(msg.chat):
-                reply(msg.chat, "Receiving messages again:", quote=msg.message)
-                resend_missed_messages(msg.chat)
-            else:
-                reply(msg.chat, "Chat is not muted anyway.", quote=msg.message)
+
+        match arguments:
+            case ["/help", *_]:
+                reply(msg.chat, relay_group_help(), quote=msg.message)
+
+            case ["/timer"]:
+                result = set_ephemeral_timer(msg.chat, "0")
+                reply(msg.chat, result, quote=msg.message)
+            case ["/timer", duration, *_]:
+                result = set_ephemeral_timer(msg.chat, duration)
+                reply(msg.chat, result, quote=msg.message)
+
+            case [cmd, *_] if cmd in ("/spam", "/mute"):
+                if mute_relay_group(msg.chat):
+                    if cmd != "/spam":  # workaround for some other automation
+                        reply(msg.chat, "Ignoring chat in the future.", quote=msg.message)
+                else:
+                    reply(msg.chat, "Chat is already muted.", quote=msg.message)
+
+            case ["/unmute", *_]:
+                if unmute_relay_group(msg.chat):
+                    reply(msg.chat, "Receiving messages again:", quote=msg.message)
+                    resend_missed_messages(msg.chat)
+                else:
+                    reply(msg.chat, "Chat is not muted anyway.", quote=msg.message)
     elif msg.quote:
         quoted_msg = account.get_message_by_id(msg.quote.message_id).get_snapshot()
         if quoted_msg.sender == account.self_contact:

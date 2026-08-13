@@ -1,6 +1,8 @@
 import importlib.resources
 from io import StringIO
 
+from pyinfra import host
+from pyinfra.facts.files import File
 from pyinfra.operations import files, git, server, systemd
 
 
@@ -96,10 +98,11 @@ def deploy_team_bot(
         _use_su_login=True,
     )
 
-    server.shell(
-        name=f"enable {unix_user}'s systemd units to auto-start at boot",
-        commands=[f"loginctl enable-linger {unix_user}"],
-    )
+    if not host.get_fact(File, f"/var/lib/systemd/linger/{unix_user}"):
+        server.shell(
+            name=f"enable {unix_user}'s systemd units to auto-start at boot",
+            commands=[f"loginctl enable-linger {unix_user}"],
+        )
 
     systemd.service(
         name=f"{unix_user}: restart team-bot systemd service",

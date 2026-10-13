@@ -25,6 +25,7 @@ def deploy_team_bot(
     """
 
     git.config(
+        name="git config rebase.autoStash=true",
         key="rebase.autoStash",
         value="true",
         _su_user=unix_user,

@@ -41,6 +41,9 @@ class ExceptionNotifier:
             now = time.time()
             if not self.should_notify(now):
                 return False
+            if type(exc).__name__ == "JsonRpcError" and "does not exist for account" in str(exc):
+                # ignore, uncritical core error
+                return False
             crew_id = get_crew_id_from_account(self._account)
             if not crew_id:
                 log.error("ExceptionNotifier: no crew configured; skipping crew notice.")

@@ -6,7 +6,7 @@ import string
 from typing import Optional
 
 import qrcode
-from deltachat_rpc_client import EventType, events, Account, Client
+from deltachat_rpc_client import EventType, events
 
 from .util import get_crew_invite, has_crew
 
@@ -66,19 +66,12 @@ def catch_events(event):
             log.debug(f"Saved crew ID: {crew.id}")
 
 
-def configure(
-        email: Optional[str],
-        prev_email: Optional[str],
-        password: Optional[str],
-        prev_pass: Optional[str],
-) -> (bool, str, str):
+def configure_email(email: Optional[str], prev_email: Optional[str]) -> (bool, str):
     """Configure an account with given email and password, generate if necessary.
 
     :param email: the email as passed by the CLI
     :param prev_email: the email as configured already
-    :param password: the password as passed by the CLI
-    :param prev_pass: the password as configured already
-    :return: whether to reconfigure the account, the email address to configure it with, and the password
+    :return: whether to reconfigure the account, and the email address to configure it with
     """
     reconfigure = False
     if not prev_email:
@@ -93,7 +86,17 @@ def configure(
     else:
         email = prev_email
         log.debug("Email address already set, no changes necessary")
+    return reconfigure, email
 
+
+def configure_password(password: Optional[str], prev_pass: Optional[str]) -> (bool, str, str):
+    """Configure an account with given email and password, generate if necessary.
+
+    :param password: the password as passed by the CLI
+    :param prev_pass: the password as configured already
+    :return: whether to reconfigure the account, and the password to configure it with
+    """
+    reconfigure = False
     if not prev_pass:
         log.debug("Setting email password...")
         reconfigure = True
@@ -106,5 +109,4 @@ def configure(
     else:
         password = prev_pass
         log.debug("Email password already set, no changes necessary")
-
-    return reconfigure, email, password
+    return reconfigure, password

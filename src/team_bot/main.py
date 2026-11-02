@@ -1,8 +1,6 @@
 import argparse
 import logging
 import os
-import random
-import string
 from threading import Thread
 from typing import Callable, Iterable, Optional, Tuple, Union
 
@@ -13,18 +11,16 @@ from deltachat_rpc_client.events import EventFilter
 from .commands import migrate_from_cffi
 from .exception_notifier import exception_notifier
 from .relay import relayhooks
-from .setup import setuphooks
+from .setup import configure_email, configure_password, setuphooks
 from .util import has_crew
-
-ALPHANUMERIC = string.ascii_lowercase + string.digits
 
 
 def run_bot(
     log: logging.Logger,
     accounts_dir: Optional[str] = None,
     until: Optional[Callable[[AttrDict], bool]] = None,
-    email: Optional[str] = None,
-    password: Optional[str] = None,
+    specified_email: Optional[str] = None,
+    specified_password: Optional[str] = None,
     hooks: Optional[Iterable[Tuple[Callable, Union[type, "EventFilter"]]]] = None,
     **kwargs,
 ) -> str:
@@ -33,8 +29,8 @@ def run_bot(
     :param log: the logger object
     :param accounts_dir: the directory where the account database is stored
     :param until: to stop the bot, make this function return True
-    :param email: the email address of the bot
-    :param password: the password for the email address
+    :param specified_email: the email address of the bot
+    :param specified_password: the password for the email address
     :param hooks: a collection of hooks which the bot will use
     :return the accounts directory
     """
@@ -56,22 +52,17 @@ def run_bot(
         exception_notifier.set_account(account)
         client.logger.debug("Running deltachat core %s", core_version)
 
-        if not client.is_configured():
-            if not email:
-                email = "".join(random.choices(ALPHANUMERIC, k=9)) + "@nine.testrun.org"
-                log.warning(f"No email specified, creating new chatmail address: {email}")
-            if not password:
-                password = "".join(random.choices(ALPHANUMERIC, k=20))
-                log.warning("No password specified, trying with random password")
-            configure_thread = Thread(
-                target=client.configure,
-                daemon=True,
-                kwargs={"email": email, "password": password},
-            )
-            configure_thread.start()
-        else:
-            if password:
-                log.warning("Password already configured, CLI argument has no effect")
+        if hooks.__name__ == "Setup hooks":
+            email_changed, email = configure_email(specified_email, account.get_config("configured_addr"))
+            pass_changed, password = configure_password(specified_password, account.get_config("mail_pw"))
+            if email_changed or pass_changed:
+                configure_thread = Thread(
+                    target=client.configure,
+                    daemon=True,
+                    kwargs={"email": email, "password": password},
+                )
+                configure_thread.start()
+
         log.info("Start listening to messages with " + hooks.__name__)
         if until:
             client.run_until(until)

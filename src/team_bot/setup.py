@@ -1,6 +1,9 @@
 import json
 import logging
 import os
+import random
+import string
+from typing import Optional
 
 import qrcode
 from deltachat_rpc_client import EventType, events
@@ -10,6 +13,7 @@ from .util import get_crew_invite, has_crew
 log = logging.getLogger("root")
 setuphooks = events.HookCollection()
 setuphooks.__name__ = "Setup hooks"
+ALPHANUMERIC = string.ascii_lowercase + string.digits
 
 
 @setuphooks.on(events.RawEvent)
@@ -60,3 +64,49 @@ def catch_events(event):
             welcome_msg.wait_until_delivered()
             event.account.set_config("ui.crew_id", str(crew.id))
             log.debug(f"Saved crew ID: {crew.id}")
+
+
+def configure_email(email: Optional[str], prev_email: Optional[str]) -> (bool, str):
+    """Configure an account with given email and password, generate if necessary.
+
+    :param email: the email as passed by the CLI
+    :param prev_email: the email as configured already
+    :return: whether to reconfigure the account, and the email address to configure it with
+    """
+    reconfigure = False
+    if not prev_email:
+        log.debug("Setting email address...")
+        reconfigure = True
+        if not email:
+            email = "".join(random.choices(ALPHANUMERIC, k=9)) + "@nine.testrun.org"
+            log.warning(f"No email specified, creating new chatmail address: {email}")
+    elif email and prev_email != email:
+        log.info("Changing email address as specified...")
+        reconfigure = True
+    else:
+        email = prev_email
+        log.debug("Email address already set, no changes necessary")
+    return reconfigure, email
+
+
+def configure_password(password: Optional[str], prev_pass: Optional[str]) -> (bool, str, str):
+    """Configure an account with given email and password, generate if necessary.
+
+    :param password: the password as passed by the CLI
+    :param prev_pass: the password as configured already
+    :return: whether to reconfigure the account, and the password to configure it with
+    """
+    reconfigure = False
+    if not prev_pass:
+        log.debug("Setting email password...")
+        reconfigure = True
+        if not password:
+            password = "".join(random.choices(ALPHANUMERIC, k=20))
+            log.warning("No email password specified, trying with random password")
+    elif password and prev_pass != password:
+        log.info("Changing email password as specified...")
+        reconfigure = True
+    else:
+        password = prev_pass
+        log.debug("Email password already set, no changes necessary")
+    return reconfigure, password

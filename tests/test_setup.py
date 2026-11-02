@@ -1,6 +1,6 @@
 import pytest
 
-from team_bot.setup import configure_email, configure_password
+from team_bot.setup import configure_email, configure_password, configure_proxy
 
 
 @pytest.mark.parametrize(
@@ -33,3 +33,15 @@ def test_configure_param(password, prev_pass, reconfigure, res_pass):
     result = configure_password(password, prev_pass)
     assert result[0] == reconfigure
     assert len(result[1]) == res_pass
+
+
+def test_configure_proxy(bot):
+    proxy_url = "socks5://127.0.0.1:9050"
+    assert configure_proxy(proxy_url, bot.account)
+    bot.configure(bot.account.get_config("configured_addr"), bot.account.get_config("mail_pw"))
+    assert bot.account.get_config("proxy_enabled") == "1"
+    assert bot.account.get_config("proxy_url") == proxy_url
+    assert configure_proxy(None, bot.account)
+    bot.configure(bot.account.get_config("configured_addr"), bot.account.get_config("mail_pw"))
+    assert bot.account.get_config("proxy_enabled") == "0"
+    assert bot.account.get_config("proxy_url") == proxy_url

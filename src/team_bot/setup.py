@@ -6,7 +6,7 @@ import string
 from typing import Optional
 
 import qrcode
-from deltachat_rpc_client import EventType, events
+from deltachat_rpc_client import Account, EventType, events
 
 from .util import get_crew_invite, has_crew
 
@@ -110,3 +110,25 @@ def configure_password(password: Optional[str], prev_pass: Optional[str]) -> (bo
         password = prev_pass
         log.debug("Email password already set, no changes necessary")
     return reconfigure, password
+
+
+def configure_proxy(proxy_url: Optional[str], account: Account) -> bool:
+    """Configure a proxy for a given account
+
+    :param proxy_url: the URL for the proxy
+    :param account: the Delta Chat account object
+    :return: whether to reconfigure the account
+    """
+    prev_enabled = True if account.get_config("proxy_enabled") == "1" else False
+    prev_proxy = account.get_config("proxy_url")
+    reconfigure = False
+    if proxy_url:
+        account.set_config("proxy_url", proxy_url)
+        account.set_config("proxy_enabled", "1")
+        if not prev_enabled or proxy_url != prev_proxy:
+            reconfigure = True
+    else:
+        account.set_config("proxy_enabled", "0")
+        if prev_enabled:
+            reconfigure = True
+    return reconfigure

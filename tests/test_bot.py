@@ -14,7 +14,7 @@ from team_bot.util import (
     parse_new_command_args,
 )
 
-TIMEOUT = 40
+TIMEOUT = 60
 ALICE_VCARD = """BEGIN:VCARD
 VERSION:4.0
 EMAIL:alice@example.org

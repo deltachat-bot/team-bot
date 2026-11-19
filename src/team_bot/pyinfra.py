@@ -31,7 +31,7 @@ def deploy_team_bot(
         _su_user=unix_user,
         _use_su_login=True,
     )
-    clone_repo = git.repo(
+    repo = clone_repo = git.repo(
         name="Pull the team-bot repository",
         src="https://github.com/deltachat-bot/team-bot",
         dest=f"/home/{unix_user}/team-bot",
@@ -65,7 +65,7 @@ def deploy_team_bot(
     if user_invite:
         secrets.append(f"TEAMS_USER_INVITE={user_invite}")
     env = "\n".join(secrets)
-    files.put(
+    secrets = files.put(
         name="upload secrets",
         src=StringIO(env),
         dest=f"/home/{unix_user}/.env",
@@ -82,21 +82,13 @@ def deploy_team_bot(
         group=unix_user,
     )
 
-    files.template(
+    unit = files.template(
         name="upload team-bot systemd unit",
         src=importlib.resources.files(__package__) / "pyinfra_assets" / "team-bot.service.j2",
         dest=f"/home/{unix_user}/.config/systemd/user/team-bot.service",
         user=unix_user,
         unix_user=unix_user,
         bot_email=bot_email,
-    )
-
-    systemd.daemon_reload(
-        name=f"{unix_user}: load team-bot systemd service",
-        user_name=unix_user,
-        user_mode=True,
-        _su_user=unix_user,
-        _use_su_login=True,
     )
 
     if not host.get_fact(File, f"/var/lib/systemd/linger/{unix_user}"):
@@ -109,7 +101,9 @@ def deploy_team_bot(
         name=f"{unix_user}: restart team-bot systemd service",
         service="team-bot.service",
         running=True,
-        restarted=True,
+        enabled=True,
+        restarted=unit.changed or repo.changed or secrets.changed,
+        daemon_reload=unit.changed,
         user_mode=True,
         _su_user=unix_user,
         _use_su_login=True,
